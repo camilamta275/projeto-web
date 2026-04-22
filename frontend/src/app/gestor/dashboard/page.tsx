@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import {
   Box, Container, VStack, HStack, Heading, Text, SimpleGrid, Card, CardBody,
   Table, Thead, Tbody, Tr, Th, Td, Badge, Button, Input, InputGroup,
-  InputLeftElement, Avatar, Divider, Spinner, IconButton, Menu, MenuButton, 
+  InputLeftElement, Avatar, Spinner, IconButton, Menu, MenuButton, 
   MenuList, MenuItem, useDisclosure,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton,
   Select,
