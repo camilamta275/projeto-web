@@ -1,0 +1,49 @@
+{
+  "name": "fiscalize",
+  "version": "1.0.0",
+  "description": "Sistema integrado de gestão urbana de Pernambuco - Recife Inteligente",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "mock": "json-server --watch src/mocks/db.json --port 3001",
+    "dev-with-mock": "concurrently \"npm run dev\" \"npm run mock\"",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\""
+  },
+  "dependencies": {
+    "next": "^14.2.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@chakra-ui/react": "^2.8.2",
+    "@chakra-ui/icons": "^2.1.1",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "framer-motion": "^10.16.4",
+    "@hookform/resolvers": "^3.3.4",
+    "react-hook-form": "^7.48.0",
+    "zod": "^3.22.4",
+    "zustand": "^4.4.1",
+    "axios": "^1.6.2",
+    "date-fns": "^2.30.0",
+    "recharts": "^2.10.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "typescript": "^5.3.2",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.6",
+    "msw": "^2.0.8",
+    "prettier": "^3.1.0",
+    "eslint": "^8.54.0",
+    "eslint-config-next": "^14.2.3",
+    "json-server": "^0.17.4",
+    "concurrently": "^8.2.2"
+  }
+}
