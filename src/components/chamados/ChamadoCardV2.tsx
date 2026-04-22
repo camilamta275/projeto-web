@@ -128,11 +128,6 @@ export function ChamadoCard({ chamado, onClick }: ChamadoCardProps) {
       </VStack>
 
       {/* Órgão responsável */}
-      {chamado.gestorId && (
-        <Text fontSize="xs" color="primary.600" fontWeight="bold">
-          👤 Atribuído a um gestor
-        </Text>
-      )}
     </Box>
   )
 }

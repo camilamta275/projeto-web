@@ -36,4 +36,7 @@ export interface Chamado {
   atualizadoEm: string
   timeline: TimelineEvent[]
   atribuído?: boolean
+  slaJustification?: string
+  resolutionNote?: string
+  resolutionPhotoUrl?: string
 }

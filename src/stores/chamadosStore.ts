@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Chamado, StatusChamado } from '@/types'
+import dbData from '@/mocks/db.json'
 
 interface ChamadosState {
   chamados: Chamado[]
@@ -20,7 +21,7 @@ interface ChamadosState {
   setLoading: (loading: boolean) => void
 }
 
-export const useChamadosStore = create<ChamadosState>((set) => ({
+export const useChamadosStore = create<ChamadosState>((set, get) => ({
   chamados: [],
   chamadoAtual: null,
   filtros: {},
@@ -31,16 +32,11 @@ export const useChamadosStore = create<ChamadosState>((set) => ({
     set({ loading: true, error: null })
     try {
       const response = await fetch('http://localhost:3001/chamados')
-      if (!response.ok) {
-        throw new Error('Erro ao buscar chamados')
-      }
+      if (!response.ok) throw new Error('Servidor indisponível')
       const chamados = await response.json()
       set({ chamados, loading: false })
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        loading: false,
-      })
+    } catch {
+      set({ chamados: dbData.chamados as Chamado[], loading: false })
     }
   },
 
@@ -48,16 +44,16 @@ export const useChamadosStore = create<ChamadosState>((set) => ({
     set({ loading: true, error: null })
     try {
       const response = await fetch(`http://localhost:3001/chamados/${id}`)
-      if (!response.ok) {
-        throw new Error('Chamado não encontrado')
-      }
+      if (!response.ok) throw new Error('Chamado não encontrado')
       const chamado = await response.json()
       set({ chamadoAtual: chamado, loading: false })
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        loading: false,
-      })
+    } catch {
+      const local = get().chamados.find((c) => c.id === id)
+      if (local) {
+        set({ chamadoAtual: local, loading: false })
+      } else {
+        set({ error: 'Chamado não encontrado', loading: false })
+      }
     }
   },
 
@@ -129,3 +125,11 @@ export const useChamadosStore = create<ChamadosState>((set) => ({
     set({ loading })
   },
 }))
+
+export const useTicketById = (id: string) =>
+  useChamadosStore((state) => state.chamados.find((c) => c.id === id))
+
+export const useAllTickets = () =>
+  useChamadosStore((state) => state.chamados)
+
+export const useAllOrgs = () => dbData.orgaos

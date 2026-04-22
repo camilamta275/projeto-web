@@ -29,6 +29,27 @@ const theme = extendTheme({
       600: '#dc2626',
     },
   },
+  semanticTokens: {
+    colors: {
+      card: { default: 'white', _dark: 'gray.800' },
+      border: { default: 'gray.200', _dark: 'gray.700' },
+      foreground: { default: 'gray.900', _dark: 'gray.50' },
+      muted: {
+        foreground: { default: 'gray.500', _dark: 'gray.400' },
+      },
+      status: {
+        open: { default: 'blue.500' },
+        openBg: { default: 'blue.50' },
+        analysis: { default: 'yellow.500' },
+        progress: { default: 'purple.500' },
+        waiting: { default: 'orange.500' },
+        done: { default: 'green.500' },
+        closed: { default: 'gray.400' },
+        critical: { default: 'red.500' },
+        criticalBg: { default: 'red.50' },
+      },
+    },
+  },
   fonts: {
     body: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
     heading: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',

@@ -330,58 +330,373 @@
       ]
     },
     {
-      "protocolo": "SCH-2026-9439",
+      "id": "7",
+      "protocolo": "SCH-2026-0007",
       "categoria": "Problemas na Via",
-      "subcategoria": "",
-      "descricao": "hbndheheregeh4ehe4hrthrehrther",
-      "status": "Aberto",
+      "subcategoria": "Calçada danificada",
+      "descricao": "Calçada completamente destruída na Rua do Hospício com pedras soltas e risco de queda para pedestres, especialmente idosos",
+      "status": "Aguardando",
       "prioridade": "Média",
       "cidadaoId": "1",
       "orgaoId": "1",
-      "endereco": "h3e5gh3eheherh",
-      "latitude": -8.0476,
-      "longitude": -34.877,
-      "slaHoras": 48,
-      "criadoEm": "2026-04-22T01:05:49.438Z",
-      "atualizadoEm": "2026-04-22T01:05:49.438Z",
+      "gestorId": "3",
+      "endereco": "Rua do Hospício, 320, Boa Vista, Recife, PE",
+      "latitude": -8.0612,
+      "longitude": -34.8798,
+      "slaHoras": 72,
+      "criadoEm": "2026-04-12T09:00:00Z",
+      "atualizadoEm": "2026-04-21T15:00:00Z",
       "timeline": [
         {
-          "id": "1776819949439",
+          "id": "t7-1",
           "tipo": "criacao",
           "titulo": "Chamado aberto",
           "descricao": "Chamado registrado pelo cidadão via portal",
           "autor": "João Silva",
-          "timestamp": "2026-04-22T01:05:49.438Z"
+          "timestamp": "2026-04-12T09:00:00Z"
+        },
+        {
+          "id": "t7-2",
+          "tipo": "status",
+          "titulo": "Em Análise",
+          "descricao": "Equipe de fiscalização visitou o local e confirmou a irregularidade",
+          "autor": "Pedro Costa",
+          "timestamp": "2026-04-14T11:30:00Z"
+        },
+        {
+          "id": "t7-3",
+          "tipo": "mensagem",
+          "titulo": "Atualização ao cidadão",
+          "descricao": "Aguardando chegada do material de reposição. Previsão de início do reparo em 5 dias úteis.",
+          "autor": "Pedro Costa",
+          "timestamp": "2026-04-21T15:00:00Z"
         }
-      ],
-      "id": "Dzsig5j"
+      ]
     },
     {
-      "protocolo": "SCH-2026-3757",
-      "categoria": "Iluminação Pública",
-      "subcategoria": "",
-      "descricao": "heghehehrthrthrthhnrhtrhrtgerrghe",
-      "status": "Aberto",
-      "prioridade": "Média",
-      "cidadaoId": "1",
-      "orgaoId": "4",
-      "endereco": "grghrtsfrfrfgr",
-      "latitude": -8.0476,
-      "longitude": -34.877,
-      "slaHoras": 24,
-      "criadoEm": "2026-04-22T01:09:13.757Z",
-      "atualizadoEm": "2026-04-22T01:09:13.757Z",
+      "id": "8",
+      "protocolo": "SCH-2026-0008",
+      "categoria": "Água e Esgoto",
+      "subcategoria": "Esgoto a céu aberto",
+      "descricao": "Esgoto estourando na calçada da Rua Benfica há mais de 3 dias, causando mau cheiro e risco sanitário para os moradores",
+      "status": "Em Análise",
+      "prioridade": "Crítica",
+      "cidadaoId": "2",
+      "orgaoId": "3",
+      "gestorId": "5",
+      "endereco": "Rua Benfica, 740, Madalena, Recife, PE",
+      "latitude": -8.0689,
+      "longitude": -34.8862,
+      "slaHoras": 36,
+      "slaEncerradoHa": -8,
+      "slaJustification": "Equipe de manutenção estava atendendo emergência em outra localidade com rompimento de adutora principal. Realocação feita assim que possível.",
+      "criadoEm": "2026-04-20T07:45:00Z",
+      "atualizadoEm": "2026-04-21T10:20:00Z",
       "timeline": [
         {
-          "id": "1776820153757",
+          "id": "t8-1",
+          "tipo": "criacao",
+          "titulo": "Chamado aberto",
+          "descricao": "Chamado registrado com urgência pela cidadã",
+          "autor": "Maria Santos",
+          "timestamp": "2026-04-20T07:45:00Z"
+        },
+        {
+          "id": "t8-2",
+          "tipo": "status",
+          "titulo": "Escalado para análise",
+          "descricao": "Chamado escalado para prioridade crítica e encaminhado à equipe de campo",
+          "autor": "Carlos Ferreira",
+          "timestamp": "2026-04-20T09:10:00Z"
+        },
+        {
+          "id": "t8-3",
+          "tipo": "mensagem",
+          "titulo": "Comunicado ao cidadão",
+          "descricao": "Lamentamos o atraso. Uma equipe foi designada e chegará ao local em até 4 horas.",
+          "autor": "Carlos Ferreira",
+          "timestamp": "2026-04-21T10:20:00Z"
+        }
+      ]
+    },
+    {
+      "id": "9",
+      "protocolo": "SCH-2026-0009",
+      "categoria": "Saneamento Básico",
+      "subcategoria": "Lixo acumulado",
+      "descricao": "Acúmulo de lixo em terreno baldio na esquina com odor forte, atraindo vetores e prejudicando a saúde dos moradores do entorno",
+      "status": "Resolvido",
+      "prioridade": "Alta",
+      "cidadaoId": "1",
+      "orgaoId": "2",
+      "gestorId": "4",
+      "endereco": "Rua José Osório, esquina com Rua Corredor do Bispo, Boa Vista, Recife, PE",
+      "latitude": -8.0634,
+      "longitude": -34.8827,
+      "slaHoras": 48,
+      "slaEncerradoHa": 6,
+      "resolutionNote": "Terreno limpo pela equipe de zeladoria urbana. Foram recolhidas aproximadamente 3 toneladas de resíduos. Proprietário notificado para manutenção periódica do lote.",
+      "criadoEm": "2026-04-14T08:30:00Z",
+      "atualizadoEm": "2026-04-21T17:00:00Z",
+      "timeline": [
+        {
+          "id": "t9-1",
+          "tipo": "criacao",
+          "titulo": "Chamado aberto",
+          "descricao": "Chamado registrado pelo cidadão com foto do local",
+          "autor": "João Silva",
+          "timestamp": "2026-04-14T08:30:00Z"
+        },
+        {
+          "id": "t9-2",
+          "tipo": "status",
+          "titulo": "Em Análise",
+          "descricao": "Vistoria agendada para verificar dimensão do problema",
+          "autor": "Ana Oliveira",
+          "timestamp": "2026-04-15T09:00:00Z"
+        },
+        {
+          "id": "t9-3",
+          "tipo": "transferencia",
+          "titulo": "Transferido para zeladoria",
+          "descricao": "Chamado encaminhado à equipe de zeladoria urbana para execução",
+          "autor": "Ana Oliveira",
+          "timestamp": "2026-04-16T10:00:00Z"
+        },
+        {
+          "id": "t9-4",
+          "tipo": "conclusao",
+          "titulo": "Serviço concluído",
+          "descricao": "Terreno limpo com sucesso. Notificação de encerramento enviada ao cidadão.",
+          "autor": "Ana Oliveira",
+          "timestamp": "2026-04-21T17:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "protocolo": "SCH-2026-0010",
+      "categoria": "Iluminação Pública",
+      "subcategoria": "Poste danificado",
+      "descricao": "Poste de iluminação tombado sobre a calçada após colisão de veículo, bloqueando parcialmente a passagem de pedestres e com risco de choque",
+      "status": "Aberto",
+      "prioridade": "Crítica",
+      "cidadaoId": "2",
+      "orgaoId": "4",
+      "endereco": "Avenida Caxangá, 2100, Iputinga, Recife, PE",
+      "latitude": -8.0423,
+      "longitude": -34.9124,
+      "slaHoras": 24,
+      "criadoEm": "2026-04-22T06:15:00Z",
+      "atualizadoEm": "2026-04-22T06:15:00Z",
+      "timeline": [
+        {
+          "id": "t10-1",
+          "tipo": "criacao",
+          "titulo": "Chamado aberto",
+          "descricao": "Ocorrência registrada com urgência pela cidadã",
+          "autor": "Maria Santos",
+          "timestamp": "2026-04-22T06:15:00Z"
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "protocolo": "SCH-2026-0011",
+      "categoria": "Sinalização",
+      "subcategoria": "Semáforo desligado",
+      "descricao": "Semáforo do cruzamento da Avenida Boa Viagem com Rua Félix de Brito completamente apagado há dois dias, causando congestionamento e risco de acidentes",
+      "status": "Fechado",
+      "prioridade": "Crítica",
+      "cidadaoId": "1",
+      "orgaoId": "5",
+      "gestorId": "3",
+      "endereco": "Av. Boa Viagem com Rua Félix de Brito e Melo, Boa Viagem, Recife, PE",
+      "latitude": -8.1143,
+      "longitude": -34.8943,
+      "slaHoras": 24,
+      "slaEncerradoHa": -5,
+      "slaJustification": "Queda de energia na subestação afetou múltiplos semáforos simultaneamente. Priorizamos os cruzamentos de maior fluxo. O atraso neste ponto foi de aproximadamente 5 horas.",
+      "resolutionNote": "Semáforo restabelecido após substituição do controlador danificado. Sistema em operação normal.",
+      "criadoEm": "2026-04-17T18:00:00Z",
+      "atualizadoEm": "2026-04-20T12:30:00Z",
+      "timeline": [
+        {
+          "id": "t11-1",
           "tipo": "criacao",
           "titulo": "Chamado aberto",
           "descricao": "Chamado registrado pelo cidadão via portal",
           "autor": "João Silva",
-          "timestamp": "2026-04-22T01:09:13.757Z"
+          "timestamp": "2026-04-17T18:00:00Z"
+        },
+        {
+          "id": "t11-2",
+          "tipo": "status",
+          "titulo": "Em Andamento",
+          "descricao": "Equipe técnica do DETRAN despachada para o local",
+          "autor": "Supervisor DETRAN",
+          "timestamp": "2026-04-18T07:00:00Z"
+        },
+        {
+          "id": "t11-3",
+          "tipo": "mensagem",
+          "titulo": "Comunicado ao cidadão",
+          "descricao": "Identificamos o problema na subestação. Peças de reposição já requisitadas. Previsão de resolução em até 24 horas.",
+          "autor": "Supervisor DETRAN",
+          "timestamp": "2026-04-18T14:00:00Z"
+        },
+        {
+          "id": "t11-4",
+          "tipo": "conclusao",
+          "titulo": "Semáforo restaurado",
+          "descricao": "Controlador substituído e semáforo em operação normal. Chamado encerrado.",
+          "autor": "Técnico DETRAN",
+          "timestamp": "2026-04-20T12:30:00Z"
         }
-      ],
-      "id": "7YpeX_G"
+      ]
+    },
+    {
+      "id": "12",
+      "protocolo": "SCH-2026-0012",
+      "categoria": "Problemas na Via",
+      "subcategoria": "Alagamento por falta de drenagem",
+      "descricao": "Trecho da Rua Imperial alaga a cada chuva devido ao entupimento das bocas-de-lobo. Água invade calçadas e casas no trecho entre os números 200 e 400",
+      "status": "Em Andamento",
+      "prioridade": "Crítica",
+      "cidadaoId": "2",
+      "orgaoId": "2",
+      "gestorId": "4",
+      "endereco": "Rua Imperial, trecho 200–400, São José, Recife, PE",
+      "latitude": -8.0655,
+      "longitude": -34.8712,
+      "fotoUrl": "https://via.placeholder.com/600x400",
+      "slaHoras": 72,
+      "criadoEm": "2026-04-19T14:00:00Z",
+      "atualizadoEm": "2026-04-22T08:00:00Z",
+      "timeline": [
+        {
+          "id": "t12-1",
+          "tipo": "criacao",
+          "titulo": "Chamado aberto",
+          "descricao": "Chamado aberto com foto do alagamento em andamento",
+          "autor": "Maria Santos",
+          "timestamp": "2026-04-19T14:00:00Z"
+        },
+        {
+          "id": "t12-2",
+          "tipo": "status",
+          "titulo": "Prioridade elevada",
+          "descricao": "Chamado escalado para crítico após confirmação de invasão de residências",
+          "autor": "Ana Oliveira",
+          "timestamp": "2026-04-19T15:30:00Z"
+        },
+        {
+          "id": "t12-3",
+          "tipo": "status",
+          "titulo": "Em Andamento",
+          "descricao": "Máquina de desobstrução deslocada para o local",
+          "autor": "Ana Oliveira",
+          "timestamp": "2026-04-20T07:00:00Z"
+        },
+        {
+          "id": "t12-4",
+          "tipo": "mensagem",
+          "titulo": "Atualização de progresso",
+          "descricao": "Desobstrução de 60% das bocas-de-lobo concluída. Continuamos amanhã cedo com o trecho restante.",
+          "autor": "Ana Oliveira",
+          "timestamp": "2026-04-22T08:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "protocolo": "SCH-2026-0013",
+      "categoria": "Água e Esgoto",
+      "subcategoria": "Encanamento entupido",
+      "descricao": "Encanamento público entupido na Rua da Paz causando retorno de esgoto para dentro de residências no condomínio",
+      "status": "Resolvido",
+      "prioridade": "Crítica",
+      "cidadaoId": "1",
+      "orgaoId": "3",
+      "gestorId": "5",
+      "endereco": "Rua da Paz, 55, Afogados, Recife, PE",
+      "latitude": -8.0921,
+      "longitude": -34.9012,
+      "slaHoras": 24,
+      "slaEncerradoHa": 2,
+      "resolutionNote": "Entupimento removido com uso de hidrojateamento. Trecho de 15 metros de tubulação substituído. Sistema testado e em pleno funcionamento.",
+      "criadoEm": "2026-04-21T11:00:00Z",
+      "atualizadoEm": "2026-04-22T10:45:00Z",
+      "timeline": [
+        {
+          "id": "t13-1",
+          "tipo": "criacao",
+          "titulo": "Chamado aberto",
+          "descricao": "Chamado registrado com urgência pelo cidadão",
+          "autor": "João Silva",
+          "timestamp": "2026-04-21T11:00:00Z"
+        },
+        {
+          "id": "t13-2",
+          "tipo": "status",
+          "titulo": "Em Análise",
+          "descricao": "Equipe acionada e a caminho do local",
+          "autor": "Carlos Ferreira",
+          "timestamp": "2026-04-21T11:45:00Z"
+        },
+        {
+          "id": "t13-3",
+          "tipo": "mensagem",
+          "titulo": "Atualização ao cidadão",
+          "descricao": "Nossa equipe chegou ao local e está iniciando o diagnóstico. Estimamos resolução em até 6 horas.",
+          "autor": "Carlos Ferreira",
+          "timestamp": "2026-04-21T13:00:00Z"
+        },
+        {
+          "id": "t13-4",
+          "tipo": "conclusao",
+          "titulo": "Serviço concluído",
+          "descricao": "Encanamento desentupido e trecho danificado substituído com sucesso.",
+          "autor": "Técnico COMPESA",
+          "timestamp": "2026-04-22T10:45:00Z"
+        }
+      ]
+    },
+    {
+      "id": "14",
+      "protocolo": "SCH-2026-0014",
+      "categoria": "Outros Problemas",
+      "subcategoria": "Lote vago abandonado",
+      "descricao": "Lote abandonado na Rua Nova transformado em depósito irregular de entulho e lixo. Situação gera proliferação de mosquitos e animais peçonhentos",
+      "status": "Em Análise",
+      "prioridade": "Média",
+      "cidadaoId": "2",
+      "orgaoId": "2",
+      "gestorId": "4",
+      "endereco": "Rua Nova, 190, Torre, Recife, PE",
+      "latitude": -8.0558,
+      "longitude": -34.8974,
+      "slaHoras": 96,
+      "criadoEm": "2026-04-21T16:20:00Z",
+      "atualizadoEm": "2026-04-22T09:00:00Z",
+      "timeline": [
+        {
+          "id": "t14-1",
+          "tipo": "criacao",
+          "titulo": "Chamado aberto",
+          "descricao": "Chamado registrado pela cidadã",
+          "autor": "Maria Santos",
+          "timestamp": "2026-04-21T16:20:00Z"
+        },
+        {
+          "id": "t14-2",
+          "tipo": "status",
+          "titulo": "Em Análise",
+          "descricao": "Chamado recebido e encaminhado para fiscalização de posturas municipais",
+          "autor": "Ana Oliveira",
+          "timestamp": "2026-04-22T09:00:00Z"
+        }
+      ]
     }
   ],
   "notificacoes": [
