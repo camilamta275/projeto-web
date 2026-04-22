@@ -1,5 +1,6 @@
 # Next.js
 /.next
+**/.next
 /out
 *.log
 *.swp
