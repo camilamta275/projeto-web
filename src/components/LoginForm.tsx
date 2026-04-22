@@ -23,7 +23,7 @@ import { useRouter } from 'next/navigation'
 
 const DEMO_USERS = [
   { email: 'joao@example.com', nome: 'João Silva', perfil: 'Cidadão', color: 'blue' },
-  { email: 'pedro@pmr.pe.gov.br', nome: 'Pedro Costa', perfil: 'Gestor', color: 'green' },
+  { email: 'joao@prefeitura.gov.br', nome: 'João da Silva Gestor', perfil: 'Gestor', color: 'green' },
   { email: 'admin@recife.pe.gov.br', nome: 'Admin Sistema', perfil: 'Admin', color: 'purple' },
 ] as const
 

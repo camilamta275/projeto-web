@@ -5,7 +5,8 @@ import type { Usuario } from '@/types'
 const MOCK_USUARIOS: Usuario[] = [
   { id: '1', nome: 'João Silva', email: 'joao@example.com', perfil: 'Cidadão', status: 'Ativo', criadoEm: '2026-01-15T10:30:00Z' },
   { id: '2', nome: 'Maria Santos', email: 'maria@example.com', perfil: 'Cidadão', status: 'Ativo', criadoEm: '2026-02-10T14:20:00Z' },
-  { id: '3', nome: 'Pedro Costa', email: 'pedro@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
+  { id: '3', nome: 'João da Silva Gestor', email: 'joao@prefeitura.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
+  { id: '3b', nome: 'João da Silva Gestor', email: 'pedro@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
   { id: '4', nome: 'Ana Oliveira', email: 'ana@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '2', status: 'Ativo', criadoEm: '2025-11-15T08:30:00Z' },
   { id: '5', nome: 'Carlos Ferreira', email: 'carlos@compesa.pe.gov.br', perfil: 'Gestor', orgaoId: '3', status: 'Ativo', criadoEm: '2025-10-20T11:45:00Z' },
   { id: '6', nome: 'Admin Sistema', email: 'admin@recife.pe.gov.br', perfil: 'Admin', status: 'Ativo', criadoEm: '2025-09-01T00:00:00Z' },
