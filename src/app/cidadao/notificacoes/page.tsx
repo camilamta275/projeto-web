@@ -21,6 +21,7 @@ import Link from 'next/link'
 import { useNotificacoesStore } from '@/stores/notificacoesStore'
 import { useAuthStore } from '@/stores/authStore'
 import { formatTimeAgo } from '@/utils/dateFormatter'
+import { useRouter } from 'next/navigation'
 
 const tipoIcons: Record<string, string> = {
   chamado: '📝',
@@ -37,6 +38,7 @@ const tipoIcons: Record<string, string> = {
 
 export default function NotificacoesPage() {
   const toast = useToast()
+  const router = useRouter()
   const { usuario } = useAuthStore()
   const { notificacoes, loading, fetchNotificacoes, marcarComoLida, marcarTodasComoLidas } =
     useNotificacoesStore()
@@ -51,6 +53,13 @@ export default function NotificacoesPage() {
 
   const handleMarcarComoLida = async (id: string) => {
     await marcarComoLida(id)
+  }
+
+  const handleCardClick = (id: string, chamadoId?: string, lida?: boolean) => {
+    if (!lida) handleMarcarComoLida(id)
+    if (chamadoId) {
+      router.push(`/cidadao/chamados/${chamadoId}`)
+    }
   }
 
   const handleMarcarTodasComoLidas = async () => {
@@ -73,36 +82,12 @@ export default function NotificacoesPage() {
 
   return (
     <Box>
-      {/* Header com Gradiente */}
-      <Box
-        bg="linear-gradient(135deg, #1a365d 0%, #2d3748 100%)"
-        color="white"
-        py={6}
-        px={4}
-      >
-        <Container maxW="container.lg">
-          <VStack align="start" spacing={2}>
-            <HStack justify="space-between" width="100%">
-              <VStack align="start" spacing={1}>
-                <Heading size="lg">🔔 Notificações</Heading>
-                <Text opacity={0.8}>
-                  {naoLidas.length > 0
-                    ? `${naoLidas.length} nova${naoLidas.length > 1 ? 's' : ''}`
-                    : 'Você está em dia'}
-                </Text>
-              </VStack>
-              {naoLidas.length > 0 && (
-                <Badge colorScheme="red" fontSize="lg" px={3} py={2} borderRadius="full">
-                  {naoLidas.length}
-                </Badge>
-              )}
-            </HStack>
-          </VStack>
-        </Container>
-      </Box>
-
       <Container maxW="container.lg" py={6}>
         <VStack spacing={4} align="stretch">
+          <HStack justify="space-between" width="100%" mb={4}>
+            <Heading size="lg">🔔 Suas Notificações</Heading>
+          </HStack>
+
           {/* Botão Marcar Todas como Lidas */}
           {naoLidas.length > 0 && (
             <HStack justify="flex-end">
@@ -137,7 +122,8 @@ export default function NotificacoesPage() {
                   borderLeftColor={notif.lida ? 'gray.200' : 'primary.500'}
                   cursor="pointer"
                   transition="all 0.2s"
-                  _hover={{ shadow: 'md' }}
+                  _hover={{ shadow: 'md', bg: notif.lida ? 'gray.50' : 'blue.100' }}
+                  onClick={() => handleCardClick(notif.id, notif.chamadoId, notif.lida)}
                 >
                   <CardBody>
                     <HStack spacing={4} align="start">
@@ -172,7 +158,10 @@ export default function NotificacoesPage() {
                               size="xs"
                               colorScheme="primary"
                               variant="outline"
-                              onClick={() => handleMarcarComoLida(notif.id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMarcarComoLida(notif.id)
+                              }}
                             >
                               ✓ Marcar como lida
                             </Button>
@@ -212,4 +201,3 @@ export default function NotificacoesPage() {
     </Box>
   )
 }
-

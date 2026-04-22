@@ -2,7 +2,7 @@
 
 import React, { ReactNode } from 'react'
 import { Box, useMediaQuery } from '@chakra-ui/react'
-import { Header } from '@/components/layout/Header'
+import { HeaderCidadao } from '@/components/HeaderCidadao'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
@@ -31,7 +31,7 @@ export default function CidadaoLayout({ children }: { children: ReactNode }) {
 
   return (
     <Box>
-      <Header titulo="Meus Chamados" />
+      <HeaderCidadao />
       <Box pb={isDesktop ? 0 : '80px'}>
         {children}
       </Box>
