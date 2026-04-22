@@ -1,35 +1,17 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import {
-  Box,
-  Container,
-  VStack,
-  HStack,
-  Heading,
-  Text,
-  Select,
-  Button,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Badge,
-  Checkbox,
-  Card,
-  CardBody,
-  Input,
-  useToast,
+  Box, Container, VStack, HStack, Heading, Text, Select, Button, Table,
+  Thead, Tbody, Tr, Th, Td, Badge, Checkbox, Card, CardBody, Input,
+  useToast, Divider
 } from '@chakra-ui/react'
 import Link from 'next/link'
-// import { useGestorStore } from '@/stores/gestorStore'
-// import { useAuthStore } from '@/stores/authStore'
 import { StatusBadge } from '@/components/StatusBadge'
 import { PriorityBadge } from '@/components/PriorityBadge'
 
-interface Chamado {
+// Interface estendida com criadoEm para o filtro de tempo
+interface ChamadoFila {
   id: string
   protocolo: string
   categoria: string
@@ -37,80 +19,91 @@ interface Chamado {
   slaRestante: number
   prioridade: string
   status: string
-  foto?: string
+  criadoEm: string // Formato ISO
 }
 
-const chamados: Chamado[] = [
+const MOCK_CHAMADOS: ChamadoFila[] = [
   {
     id: '1',
     protocolo: 'SCH-2026-0142',
     categoria: 'Água e Esgoto',
-    endereco: 'Av. Guararapes, 100 - Centro',
+    endereco: 'Av. Guararapes, 100',
     slaRestante: -3,
     prioridade: 'Alta',
     status: 'Em Análise',
+    criadoEm: new Date().toISOString(), // Hoje
   },
   {
     id: '2',
     protocolo: 'SCH-2026-0135',
     categoria: 'Energia e Iluminação',
-    endereco: 'Rua Gervásio Pires, 450 - Boa Vista',
+    endereco: 'Rua Gervásio Pires, 450',
     slaRestante: -8,
     prioridade: 'Crítica',
     status: 'Aberto',
+    criadoEm: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 dias atrás
   },
   {
     id: '3',
     protocolo: 'SCH-2026-0128',
     categoria: 'Problemas na Via',
-    endereco: 'Rua Nunes Machado, 200 - Santo Amaro',
+    endereco: 'Rua Nunes Machado, 200',
     slaRestante: 6,
     prioridade: 'Média',
     status: 'Em Andamento',
+    criadoEm: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 dias atrás
   },
   {
     id: '4',
     protocolo: 'SCH-2026-0121',
     categoria: 'Saneamento Básico',
-    endereco: 'Rua da Aurora, 300 - Recife Antigo',
+    endereco: 'Rua da Aurora, 300',
     slaRestante: -12,
     prioridade: 'Alta',
     status: 'Aguardando',
-  },
-  {
-    id: '5',
-    protocolo: 'SCH-2026-0115',
-    categoria: 'Trânsito e Segurança',
-    endereco: 'Av. Rio Branco, 150 - Várzea',
-    slaRestante: 2,
-    prioridade: 'Média',
-    status: 'Em Análise',
-  },
-  {
-    id: '6',
-    protocolo: 'SCH-2026-0108',
-    categoria: 'Água e Esgoto',
-    endereco: 'Rua Marquês de Olinda, 50 - Recife Antigo',
-    slaRestante: -5,
-    prioridade: 'Alta',
-    status: 'Em Andamento',
-  },
+    criadoEm: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(), // Mês passado
+  }
 ]
 
 export default function FilaPage() {
   const toast = useToast()
-  // const { usuario } = useAuthStore()
-  const [selected, setSelected] = React.useState<string[]>([])
-  const [filtroStatus, setFiltroStatus] = React.useState('todos')
-  const [filtroPrioridade, setFiltroPrioridade] = React.useState('todas')
-  const [filtroPeriodo, setFiltroPeriodo] = React.useState('todos')
-  const [busca, setBusca] = React.useState('')
+  const [selected, setSelected] = useState<string[]>([])
+  const [filtroStatus, setFiltroStatus] = useState('todos')
+  const [filtroPrioridade, setFiltroPrioridade] = useState('todas')
+  const [filtroPeriodo, setFiltroPeriodo] = useState('todos')
+  const [busca, setBusca] = useState('')
+
+  // ✅ Lógica de Filtragem e Ordenação Combinada
+  const chamadosProcessados = useMemo(() => {
+    const agora = new Date()
+    const inicioHoje = new Date(agora.setHours(0, 0, 0, 0))
+    const umaSemanaAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const umMesAtras = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+    return MOCK_CHAMADOS
+      .filter((c) => {
+        const matchBusca = c.protocolo.toLowerCase().includes(busca.toLowerCase()) ||
+                           c.endereco.toLowerCase().includes(busca.toLowerCase())
+        const matchStatus = filtroStatus === 'todos' || c.status === filtroStatus
+        const matchPrioridade = filtroPrioridade === 'todas' || c.prioridade === filtroPrioridade
+
+        // Filtro de Tempo
+        const dataCriacao = new Date(c.criadoEm)
+        let matchPeriodo = true
+        if (filtroPeriodo === 'hoje') matchPeriodo = dataCriacao >= inicioHoje
+        if (filtroPeriodo === 'semana') matchPeriodo = dataCriacao >= umaSemanaAtras
+        if (filtroPeriodo === 'mes') matchPeriodo = dataCriacao >= umMesAtras
+
+        return matchBusca && matchStatus && matchPrioridade && matchPeriodo
+      })
+      .sort((a, b) => a.slaRestante - b.slaRestante) // Ordena pelo SLA mais crítico primeiro
+  }, [busca, filtroStatus, filtroPrioridade, filtroPeriodo])
 
   const handleSelectAll = () => {
-    if (selected.length === chamados.length) {
+    if (selected.length === chamadosProcessados.length) {
       setSelected([])
     } else {
-      setSelected(chamados.map((c) => c.id))
+      setSelected(chamadosProcessados.map((c) => c.id))
     }
   }
 
@@ -122,56 +115,42 @@ export default function FilaPage() {
 
   const handleAcaoEmLote = (acao: string) => {
     toast({
-      title: `${acao} em ${selected.length} chamado(s)`,
-      status: 'info',
-      duration: 2,
+      title: `${acao} realizado!`,
+      description: `${selected.length} chamado(s) processado(s).`,
+      status: 'success',
+      duration: 3000,
     })
     setSelected([])
   }
 
-  const chamadosFiltrados = chamados.filter((c) => {
-    const matchBusca = c.protocolo.toLowerCase().includes(busca.toLowerCase()) ||
-      c.endereco.toLowerCase().includes(busca.toLowerCase())
-    const matchStatus = filtroStatus === 'todos' || c.status === filtroStatus
-    const matchPrioridade = filtroPrioridade === 'todas' || c.prioridade === filtroPrioridade
-
-    return matchBusca && matchStatus && matchPrioridade
-  })
-
   return (
     <Box>
-      {/* Header */}
       <Box bg="linear-gradient(135deg, #1a365d 0%, #2d3748 100%)" color="white" py={6} px={4}>
         <Container maxW="100%">
           <VStack align="start" spacing={2}>
-            <Heading size="lg">📋 Fila de Chamados</Heading>
-            <Text opacity={0.8}>{chamadosFiltrados.length} chamados disponíveis</Text>
+            <Heading size="lg">📋 Fila de Atendimento</Heading>
+            <Text opacity={0.8}>{chamadosProcessados.length} chamados encontrados com os filtros atuais</Text>
           </VStack>
         </Container>
       </Box>
 
       <Container maxW="100%" py={6} px={4}>
         <VStack spacing={6} align="stretch">
-          {/* Filtros */}
-          <Card>
+          <Card shadow="sm" border="1px solid" borderColor="gray.200">
             <CardBody>
               <VStack spacing={4} align="stretch">
-                <Heading size="sm">🔍 Filtros</Heading>
-                <HStack spacing={3} flexWrap={{ base: 'wrap', md: 'nowrap' }}>
+                <Heading size="xs" textTransform="uppercase" color="gray.500" letterSpacing="wider">Filtros Avançados</Heading>
+                <HStack spacing={3} flexWrap="wrap">
                   <Input
-                    placeholder="Buscar por protocolo ou endereço..."
+                    placeholder="Protocolo ou endereço..."
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
                     size="sm"
-                    maxW={{ base: '100%', md: '300px' }}
+                    maxW="300px"
+                    bg="white"
                   />
 
-                  <Select
-                    value={filtroStatus}
-                    onChange={(e) => setFiltroStatus(e.target.value)}
-                    size="sm"
-                    maxW="150px"
-                  >
+                  <Select size="sm" maxW="160px" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
                     <option value="todos">Todos os status</option>
                     <option value="Aberto">Aberto</option>
                     <option value="Em Análise">Em Análise</option>
@@ -179,36 +158,24 @@ export default function FilaPage() {
                     <option value="Aguardando">Aguardando</option>
                   </Select>
 
-                  <Select
-                    value={filtroPrioridade}
-                    onChange={(e) => setFiltroPrioridade(e.target.value)}
-                    size="sm"
-                    maxW="150px"
-                  >
-                    <option value="todas">Todas prioridades</option>
+                  <Select size="sm" maxW="160px" value={filtroPrioridade} onChange={(e) => setFiltroPrioridade(e.target.value)}>
+                    <option value="todas">Prioridades</option>
                     <option value="Baixa">Baixa</option>
                     <option value="Média">Média</option>
                     <option value="Alta">Alta</option>
                     <option value="Crítica">Crítica</option>
                   </Select>
 
-                  <Select
-                    value={filtroPeriodo}
-                    onChange={(e) => setFiltroPeriodo(e.target.value)}
-                    size="sm"
-                    maxW="150px"
-                  >
+                  <Select size="sm" maxW="160px" value={filtroPeriodo} onChange={(e) => setFiltroPeriodo(e.target.value)}>
                     <option value="todos">Todo período</option>
                     <option value="hoje">Hoje</option>
                     <option value="semana">Esta semana</option>
                     <option value="mes">Este mês</option>
                   </Select>
 
-                  <Box flex={1} />
-
                   {selected.length > 0 && (
-                    <Badge colorScheme="blue" fontSize="md" px={3} py={2}>
-                      {selected.length} selecionado(s)
+                    <Badge colorScheme="blue" variant="solid" px={3} py={1} borderRadius="full">
+                      {selected.length} selecionados
                     </Badge>
                   )}
                 </HStack>
@@ -216,52 +183,32 @@ export default function FilaPage() {
             </CardBody>
           </Card>
 
-          {/* Ações em Lote */}
           {selected.length > 0 && (
-            <Card bg="blue.50" borderLeftWidth="4px" borderLeftColor="blue.500">
-              <CardBody>
-                <HStack spacing={2}>
-                  <Text fontSize="sm" fontWeight="bold">Ações:</Text>
-                  <Button
-                    size="sm"
-                    colorScheme="blue"
-                    onClick={() => handleAcaoEmLote('Assumir')}
-                  >
-                    Assumir
-                  </Button>
-                  <Button
-                    size="sm"
-                    colorScheme="orange"
-                    variant="outline"
-                    onClick={() => handleAcaoEmLote('Encaminhar')}
-                  >
-                    Encaminhar
-                  </Button>
-                  <Button
-                    size="sm"
-                    colorScheme="purple"
-                    variant="outline"
-                    onClick={() => handleAcaoEmLote('Pausar SLA')}
-                  >
-                    Pausar SLA
-                  </Button>
+            <Card bg="blue.50" border="1px dashed" borderColor="blue.300">
+              <CardBody py={3}>
+                <HStack justify="space-between">
+                  <Text fontSize="sm" fontWeight="bold" color="blue.700">Ações em Lote Disponíveis:</Text>
+                  <HStack spacing={2}>
+                    <Button size="xs" colorScheme="blue" onClick={() => handleAcaoEmLote('Assumir')}>Assumir</Button>
+                    <Button size="xs" colorScheme="orange" variant="outline" onClick={() => handleAcaoEmLote('Encaminhar')}>Encaminhar</Button>
+                    <Button size="xs" colorScheme="purple" variant="outline" onClick={() => handleAcaoEmLote('Pausar SLA')}>Pausar SLA</Button>
+                  </HStack>
                 </HStack>
               </CardBody>
             </Card>
           )}
 
-          {/* Tabela */}
-          <Box overflowX="auto">
-            <Table size="sm">
-              <Thead bg="gray.100">
+          <Box overflowX="auto" borderRadius="lg" border="1px solid" borderColor="gray.200">
+            <Table size="sm" variant="simple" bg="white">
+              <Thead bg="gray.50">
                 <Tr>
                   <Th width="40px">
                     <Checkbox
-                      isChecked={selected.length === chamadosFiltrados.length && chamadosFiltrados.length > 0}
+                      isChecked={selected.length === chamadosProcessados.length && chamadosProcessados.length > 0}
                       onChange={handleSelectAll}
                     />
                   </Th>
-                  <Th>Protocolo</Th>
+                  <Th py={4}>Protocolo</Th>
                   <Th>Categoria</Th>
                   <Th>Localização</Th>
                   <Th>Prioridade</Th>
@@ -271,11 +218,11 @@ export default function FilaPage() {
                 </Tr>
               </Thead>
               <Tbody>
-                {chamadosFiltrados.map((chamado) => (
-                  <Tr
-                    key={chamado.id}
-                    bg={selected.includes(chamado.id) ? 'blue.50' : 'white'}
-                    _hover={{ bg: selected.includes(chamado.id) ? 'blue.100' : 'gray.50' }}
+                {chamadosProcessados.map((chamado) => (
+                  <Tr 
+                    key={chamado.id} 
+                    bg={selected.includes(chamado.id) ? 'blue.50' : 'transparent'}
+                    _hover={{ bg: "gray.50" }}
                   >
                     <Td>
                       <Checkbox
@@ -283,47 +230,27 @@ export default function FilaPage() {
                         onChange={() => handleSelectOne(chamado.id)}
                       />
                     </Td>
-                    <Td fontWeight="bold" fontFamily="monospace" fontSize="xs">
-                      {chamado.protocolo}
-                    </Td>
-                    <Td fontSize="sm">{chamado.categoria}</Td>
-                    <Td fontSize="sm" maxW="200px" isTruncated title={chamado.endereco}>
-                      {chamado.endereco}
-                    </Td>
-                    <Td>
-                      <PriorityBadge priority={chamado.prioridade as any} />
-                    </Td>
-                    <Td>
-                      <StatusBadge status={chamado.status as any} />
-                    </Td>
+                    <Td fontWeight="bold" color="blue.600" fontFamily="monospace">{chamado.protocolo}</Td>
+                    <Td>{chamado.categoria}</Td>
+                    <Td maxW="220px" isTruncated fontSize="xs">{chamado.endereco}</Td>
+                    <Td><PriorityBadge priority={chamado.prioridade as any} /></Td>
+                    <Td><StatusBadge status={chamado.status as any} /></Td>
                     <Td>
                       <HStack spacing={1}>
                         <Box
-                          width="16px"
-                          height="4px"
+                          w="8px" h="8px" borderRadius="full"
                           bg={chamado.slaRestante < 0 ? 'red.500' : 'green.500'}
-                          borderRadius="full"
                         />
-                        <Text
-                          fontSize="xs"
-                          fontWeight="bold"
-                          color={chamado.slaRestante < 0 ? 'red.600' : 'green.600'}
-                        >
-                          {chamado.slaRestante < 0
-                            ? `❌ ${Math.abs(chamado.slaRestante)}h`
-                            : `✓ ${chamado.slaRestante}h`}
+                        <Text fontWeight="bold" color={chamado.slaRestante < 0 ? 'red.600' : 'green.600'} fontSize="xs">
+                          {chamado.slaRestante < 0 ? `Vencido ${Math.abs(chamado.slaRestante)}h` : `${chamado.slaRestante}h restantes`}
                         </Text>
                       </HStack>
                     </Td>
                     <Td>
-                      <HStack spacing={1}>
-                        <Button size="xs" colorScheme="primary">
-                          Assumir
-                        </Button>
+                      <HStack spacing={2}>
+                        <Button size="xs" colorScheme="blue">Assumir</Button>
                         <Link href={`/gestor/chamados/${chamado.id}`}>
-                          <Button size="xs" variant="outline">
-                            Ver
-                          </Button>
+                          <Button size="xs" variant="ghost">Detalhes</Button>
                         </Link>
                       </HStack>
                     </Td>
@@ -332,11 +259,6 @@ export default function FilaPage() {
               </Tbody>
             </Table>
           </Box>
-
-          {/* Total */}
-          <Text fontSize="xs" color="gray.600" textAlign="right">
-            Total: {chamadosFiltrados.length} chamados
-          </Text>
         </VStack>
       </Container>
     </Box>

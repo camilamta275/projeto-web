@@ -39,4 +39,6 @@ export interface Chamado {
   slaJustification?: string
   resolutionNote?: string
   resolutionPhotoUrl?: string
+
+  slaDeadline?: string
 }

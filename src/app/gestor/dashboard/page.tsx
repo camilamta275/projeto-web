@@ -1,54 +1,32 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import {
-  Box,
-  Container,
-  VStack,
-  HStack,
-  Heading,
-  Text,
-  SimpleGrid,
-  Card,
-  CardBody,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Badge,
-  Button,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Avatar,
-  Divider,
-  Spinner,
-  
+  Box, Container, VStack, HStack, Heading, Text, SimpleGrid, Card, CardBody,
+  Table, Thead, Tbody, Tr, Th, Td, Badge, Button, Input, InputGroup,
+  InputLeftElement, Avatar, Divider, Spinner, IconButton, Menu, MenuButton, 
+  MenuList, MenuItem, useDisclosure,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton,
+  Select,
 } from '@chakra-ui/react'
 import { SearchIcon, BellIcon } from '@chakra-ui/icons'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { useGestorStore } from '@/stores/gestorStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useTicketStore } from '@/stores/ticketStore'
 
-interface GraficoData {
-  categoria: string
-  sla: number
-  color: string
-}
+const Heatmap = dynamic(() => import('@/components/Heatmap'), { 
+  ssr: false,
+  loading: () => (
+    <Box height="300px" display="flex" alignItems="center" justifyContent="center" bg="gray.100">
+      <Spinner color="blue.500" />
+      <Text ml={3}>Carregando Mapa...</Text>
+    </Box>
+  )
+})
 
-interface Alerta {
-  id: string
-  protocolo: string
-  categoria: string
-  status: string
-  slaHoras: number
-  slaRestante: number
-  prioridade: string
-}
-
-const graficoData: GraficoData[] = [
+const graficoData = [
   { categoria: 'Via', sla: 85, color: '#22c55e' },
   { categoria: 'Água', sla: 72, color: '#eab308' },
   { categoria: 'Energia', sla: 58, color: '#ef4444' },
@@ -56,365 +34,242 @@ const graficoData: GraficoData[] = [
   { categoria: 'Trânsito', sla: 68, color: '#eab308' },
 ]
 
-const alertas: Alerta[] = [
-  {
-    id: '1',
-    protocolo: 'SCH-2026-0142',
-    categoria: 'Água e Esgoto',
-    status: 'Em Análise',
-    slaHoras: 48,
-    slaRestante: -3,
-    prioridade: 'Alta',
-  },
-  {
-    id: '2',
-    protocolo: 'SCH-2026-0135',
-    categoria: 'Energia e Iluminação',
-    status: 'Aberto',
-    slaHoras: 72,
-    slaRestante: -8,
-    prioridade: 'Crítica',
-  },
-  {
-    id: '3',
-    protocolo: 'SCH-2026-0128',
-    categoria: 'Problemas na Via',
-    status: 'Em Andamento',
-    slaHoras: 48,
-    slaRestante: 6,
-    prioridade: 'Média',
-  },
-  {
-    id: '4',
-    protocolo: 'SCH-2026-0121',
-    categoria: 'Saneamento Básico',
-    status: 'Aguardando',
-    slaHoras: 24,
-    slaRestante: -12,
-    prioridade: 'Alta',
-  },
-  {
-    id: '5',
-    protocolo: 'SCH-2026-0115',
-    categoria: 'Trânsito e Segurança',
-    status: 'Em Análise',
-    slaHoras: 36,
-    slaRestante: 2,
-    prioridade: 'Média',
-  },
-  {
-    id: '6',
-    protocolo: 'SCH-2026-0108',
-    categoria: 'Água e Esgoto',
-    status: 'Em Andamento',
-    slaHoras: 48,
-    slaRestante: -5,
-    prioridade: 'Alta',
-  },
-]
-
 export default function GestorDashboardPage() {
   const { usuario } = useAuthStore()
-  const { metricas, loading, fetchMetricas } = useGestorStore()
-  // const [isDesktop] = useMediaQuery('(min-width: 768px)')
+  const { metricas, loading: gestorLoading, fetchMetricas } = useGestorStore()
+  const { filteredTickets, fetchTickets, isLoading: ticketsLoading, setFilters, filters } = useTicketStore()
 
-  React.useEffect(() => {
-    if (usuario?.orgaoId) {
-      fetchMetricas(usuario.orgaoId)
-    }
-  }, [usuario?.orgaoId, fetchMetricas])
+  // --- ESTADO LOCAL PARA FILTRO DE SLA ---
+  const [slaFilter, setSlaFilter] = useState<'todos' | 'vencidos' | 'no_prazo'>('todos')
+  const [selectedProtocolo, setSelectedProtocolo] = useState<any | null>(null)
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
-  const kpis = [
-    {
-      label: 'Total de Chamados',
-      value: metricas?.totalChamados || 156,
-      change: -12,
-      icon: '📋',
-      color: 'blue',
-      bgColor: 'blue.50',
-    },
-    {
-      label: 'Em Aberto',
-      value: metricas?.chamadosAbertos || 24,
-      icon: '📭',
-      color: 'orange',
-      bgColor: 'orange.50',
-    },
-    {
-      label: 'SLA Encerrado',
-      value: metricas?.slaVencido || 8,
-      isAlert: true,
-      icon: '⚠️',
-      color: 'red',
-      bgColor: 'red.50',
-    },
-    {
-      label: 'Concluídos',
-      value: (metricas?.totalChamados || 156) - (metricas?.chamadosAbertos || 24),
-      change: 8,
-      icon: '✅',
-      color: 'green',
-      bgColor: 'green.50',
-    },
-  ]
+  useEffect(() => {
+    //fetchTickets()
+    if (usuario?.orgaoId) fetchMetricas(usuario.orgaoId)
+  }, [usuario?.orgaoId, fetchMetricas, fetchTickets])
 
-  const alertasVencidos = alertas.filter((a) => a.slaRestante < 0)
+  // ✅ CÁLCULO DE SLA REAL E FILTRAGEM EXTRA
+  const alertasProcessados = useMemo(() => {
+    const agora = new Date().getTime()
+    
+    // Primeiro, calcula o SLA para todos os tickets filtrados pela store (busca/status)
+    const comSla = filteredTickets.map(t => {
+      const deadline = t.slaDeadline ? new Date(t.slaDeadline).getTime() : agora
+      const diffHoras = Math.floor((deadline - agora) / 3600000)
+      return { ...t, slaRestante: diffHoras }
+    })
 
-  if (loading) {
-    return (
-      <Container maxW="100%" py={12} display="flex" justifyContent="center">
-        <Spinner size="lg" color="primary.500" />
-      </Container>
-    )
+    // Segundo, aplica o filtro de SLA local (Vencidos vs No Prazo)
+    if (slaFilter === 'vencidos') return comSla.filter(a => a.slaRestante < 0)
+    if (slaFilter === 'no_prazo') return comSla.filter(a => a.slaRestante >= 0)
+    
+    return comSla
+  }, [filteredTickets, slaFilter])
+
+  const alertasVencidosParaNotificacao = useMemo(() => 
+    alertasProcessados.filter(a => a.slaRestante < 0), [alertasProcessados]
+  )
+
+  const heatmapData: [number, number, number][] = useMemo(() => {
+    return alertasProcessados
+      .filter(t => t.latitude && t.longitude)
+      .map(t => [t.latitude, t.longitude, 1.0])
+  }, [alertasProcessados])
+
+  const handleActionVerSLA = (alerta: any) => {
+    setSelectedProtocolo(alerta)
+    onOpen()
   }
 
+  const kpis = [
+    { label: 'Total Filtrado', value: alertasProcessados.length, icon: '📋', color: 'blue', bgColor: 'blue.50' },
+    { label: 'Em Aberto', value: metricas?.chamadosAbertos || 0, icon: '📭', color: 'orange', bgColor: 'orange.50' },
+    { label: 'SLA Encerrado', value: alertasVencidosParaNotificacao.length, icon: '⚠️', color: 'red', bgColor: 'red.50' },
+    { label: 'Concluídos', value: 132, change: 8, icon: '✅', color: 'green', bgColor: 'green.50' },
+  ]
+
+  if (gestorLoading || ticketsLoading) return <Box display="flex" justifyContent="center" py={20}><Spinner size="xl" /></Box>
+
   return (
-    <Box>
+    <Box bg="gray.50" minH="100vh">
       {/* Header */}
-      <Box bg="white" borderBottomWidth="1px" borderBottomColor="gray.200" py={4} px={4}>
-        <Container maxW="100%" pr={4}>
-          <HStack justify="space-between" align="center">
-            <Text fontSize="2xl" fontWeight="bold" color="primary.700">
-              📊 Dashboard Gestor
-            </Text>
-
-            <HStack spacing={4}>
-              <InputGroup maxW="300px" display={{ base: 'none', md: 'flex' }}>
-                <InputLeftElement pointerEvents="none">
-                  <SearchIcon color="gray.400" />
-                </InputLeftElement>
-                <Input placeholder="Buscar protocolo..." size="sm" />
-              </InputGroup>
-
-              <HStack spacing={3}>
-                <Box position="relative">
-                  <Button size="sm" variant="ghost" borderRadius="full">
-                    <BellIcon boxSize={5} />
-                  </Button>
-                  <Badge position="absolute" top="-1" right="-1" colorScheme="red" borderRadius="full">
-                    {alertasVencidos.length}
+      <Box bg="white" borderBottomWidth="1px" py={4} px={4} position="sticky" top={0} zIndex={1100}>
+        <HStack justify="space-between">
+          <Text fontSize="xl" fontWeight="bold" color="blue.700">📊 Dashboard Gestor</Text>
+          <HStack spacing={4}>
+            <InputGroup maxW="300px">
+              <InputLeftElement><SearchIcon color="gray.400" /></InputLeftElement>
+              <Input 
+                placeholder="Buscar protocolo..." 
+                size="sm" 
+                value={filters.search || ''}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                borderRadius="md"
+              />
+            </InputGroup>
+            
+            <Menu>
+              <MenuButton as={Box} position="relative" cursor="pointer">
+                <IconButton aria-label="Notificações" icon={<BellIcon />} variant="ghost" />
+                {alertasVencidosParaNotificacao.length > 0 && (
+                  <Badge position="absolute" top="0" right="0" colorScheme="red" borderRadius="full">
+                    {alertasVencidosParaNotificacao.length}
                   </Badge>
-                </Box>
+                )}
+              </MenuButton>
+              <MenuList>
+                <Text px={3} py={2} fontSize="xs" fontWeight="bold" color="gray.500">ALERTAS CRÍTICOS</Text>
+                {alertasVencidosParaNotificacao.slice(0, 5).map(a => (
+                  <MenuItem key={a.id} onClick={() => handleActionVerSLA(a)}>
+                    ⚠️ {a.protocolo} ({a.slaRestante}h)
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
 
-                <HStack spacing={2} borderLeftWidth="1px" borderLeftColor="gray.200" pl={3}>
-                  <Avatar size="sm" name="João Silva" bg="primary.500" />
-                  <VStack align="start" spacing={0} display={{ base: 'none', md: 'flex' }}>
-                    <Text fontSize="xs" fontWeight="bold">
-                      João Silva
-                    </Text>
-                    <Text fontSize="xs" color="gray.600">
-                      Gestor
-                    </Text>
-                  </VStack>
-                </HStack>
-              </HStack>
-            </HStack>
+            <Avatar size="sm" name={usuario?.nome || "Gestor"} bg="blue.500" />
           </HStack>
-        </Container>
+        </HStack>
       </Box>
 
-      <Container maxW="100%" pr={4} py={6}>
+      <Container maxW="100%" py={6}>
         <VStack spacing={6} align="stretch">
-          {/* KPI Cards */}
+          
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
             {kpis.map((kpi, idx) => (
-              <Card key={idx} bg={kpi.bgColor} borderWidth="1px" borderColor={`${kpi.color}.200`}>
-                <CardBody>
-                  <VStack align="start" spacing={3}>
+              <Card key={idx} bg={kpi.bgColor} border="1px solid" borderColor={`${kpi.color}.100`}>
+                <CardBody p={4}>
+                  <VStack align="start" spacing={2}>
                     <HStack justify="space-between" width="100%">
-                      <Text fontSize="2xl">{kpi.icon}</Text>
-                      {kpi.change && (
-                        <Badge colorScheme={kpi.change > 0 ? 'green' : 'red'}>
-                          {kpi.change > 0 ? '+' : ''}{kpi.change}%
-                        </Badge>
-                      )}
+                      <Text fontSize="xl">{kpi.icon}</Text>
+                      {kpi.change && <Badge colorScheme={kpi.change > 0 ? 'green' : 'red'}>{kpi.change}%</Badge>}
                     </HStack>
-                    <VStack align="start" spacing={1}>
-                      <Text fontSize="xs" color="gray.600" fontWeight="bold">
-                        {kpi.label}
-                      </Text>
-                      <Text fontSize="2xl" fontWeight="bold" color={`${kpi.color}.700`}>
-                        {kpi.value}
-                      </Text>
-                    </VStack>
+                    <Box>
+                      <Text fontSize="xs" fontWeight="bold" color="gray.600" textTransform="uppercase">{kpi.label}</Text>
+                      <Text fontSize="2xl" fontWeight="bold" color={`${kpi.color}.700`}>{kpi.value}</Text>
+                    </Box>
                   </VStack>
                 </CardBody>
               </Card>
             ))}
           </SimpleGrid>
 
-          <Divider />
+          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
+            <Card><CardBody>
+              <Heading size="sm" mb={4}>📊 SLA por Categoria</Heading>
+              <Box height="300px">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={graficoData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="categoria" fontSize={12} />
+                    <YAxis domain={[0, 100]} fontSize={12} />
+                    <Tooltip cursor={{fill: 'transparent'}} />
+                    <Bar dataKey="sla" radius={[4, 4, 0, 0]}>
+                      {graficoData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardBody></Card>
 
-          {/* Gráfico de SLA por Categoria */}
-          <Card>
+            <Card><CardBody>
+              <Heading size="sm" mb={4}>🗺️ Mapa de Calor (Filtros Ativos)</Heading>
+              <Box height="300px" borderRadius="md" overflow="hidden">
+                <Heatmap data={heatmapData} />
+              </Box>
+            </CardBody></Card>
+          </SimpleGrid>
+
+          <Card borderTop="4px solid" borderTopColor="red.500">
             <CardBody>
-              <VStack align="start" spacing={4} width="100%">
-                <HStack justify="space-between" width="100%">
-                  <Heading size="md">📊 SLA por Categoria</Heading>
-                  <Text fontSize="xs" color="gray.600">
-                    Percentual de atendimento dentro do SLA
-                  </Text>
+              <HStack justify="space-between" mb={4}>
+                <HStack spacing={4}>
+                  <Heading size="sm">🚨 Fila de Atendimento</Heading>
+                  <Select 
+                    size="xs" 
+                    width="150px" 
+                    value={slaFilter} 
+                    onChange={(e) => setSlaFilter(e.target.value as any)}
+                    borderRadius="md"
+                  >
+                    <option value="todos">Todos os SLAs</option>
+                    <option value="vencidos">Apenas Vencidos</option>
+                    <option value="no_prazo">No Prazo</option>
+                  </Select>
                 </HStack>
-
-                <Box width="100%" height="300px">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={graficoData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="categoria" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip
-                        formatter={(value) => `${value}%`}
-                        contentStyle={{
-                          backgroundColor: '#fff',
-                          border: '1px solid #ccc',
-                          borderRadius: '4px',
-                        }}
-                      />
-                      <Bar dataKey="sla" radius={[8, 8, 0, 0]}>
-                        {graficoData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </Box>
-
-                {/* Legenda de Cores */}
-                <HStack spacing={4} fontSize="xs" flexWrap="wrap">
-                  <HStack>
-                    <Box width="12px" height="12px" bg="green.500" borderRadius="2px" />
-                    <Text>Excelente (≥80%)</Text>
-                  </HStack>
-                  <HStack>
-                    <Box width="12px" height="12px" bg="yellow.500" borderRadius="2px" />
-                    <Text>Bom (66-79%)</Text>
-                  </HStack>
-                  <HStack>
-                    <Box width="12px" height="12px" bg="red.500" borderRadius="2px" />
-                    <Text>Crítico (&lt;66%)</Text>
-                  </HStack>
-                </HStack>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Divider />
-
-          {/* Mapa de Calor Placeholder */}
-          <Card>
-            <CardBody>
-              <VStack align="start" spacing={4} width="100%">
-                <Heading size="md">🗺️ Mapa de Calor de Chamados</Heading>
-                <Box
-                  width="100%"
-                  height="300px"
-                  bg="gray.200"
-                  borderRadius="md"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  color="gray.600"
-                >
-                  <Text textAlign="center">
-                    Integração com Leaflet/Google Maps
-                    <br />
-                    <Text fontSize="xs" mt={2}>
-                      Exibindo densidade de chamados por região de Recife
-                    </Text>
-                  </Text>
-                </Box>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Divider />
-
-          {/* Tabela de Alertas */}
-          <Card borderTopWidth="3px" borderTopColor="red.500">
-            <CardBody>
-              <VStack align="start" spacing={4} width="100%">
-                <HStack>
-                  <Heading size="md">🚨 Alertas — SLA Encerrado</Heading>
-                  <Badge colorScheme="red">{alertasVencidos.length} Críticos</Badge>
-                </HStack>
-
-                <Box overflowX="auto" width="100%">
-                  <Table size="sm">
-                    <Thead bg="gray.100">
-                      <Tr>
-                        <Th>Protocolo</Th>
-                        <Th>Categoria</Th>
-                        <Th>Status</Th>
-                        <Th>Prioridade</Th>
-                        <Th>SLA</Th>
-                        <Th>Ação</Th>
+                <Badge colorScheme="red">{alertasProcessados.length} chamados</Badge>
+              </HStack>
+              
+              <Box overflowX="auto">
+                <Table size="sm" variant="simple">
+                  <Thead bg="gray.50">
+                    <Tr>
+                      <Th>PROTOCOLO</Th>
+                      <Th>CATEGORIA</Th>
+                      <Th>STATUS</Th>
+                      <Th>SLA RESTANTE</Th>
+                      <Th>AÇÃO</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {alertasProcessados.map((a) => (
+                      <Tr key={a.id} _hover={{ bg: "gray.50" }}>
+                        <Td fontWeight="bold" fontSize="xs" fontFamily="monospace">{a.protocolo}</Td>
+                        <Td fontSize="xs">{a.categoria}</Td>
+                        <Td><Badge size="sm" colorScheme="blue" variant="subtle">{a.status}</Badge></Td>
+                        <Td fontWeight="bold" color={a.slaRestante < 0 ? "red.600" : "orange.600"}>
+                          {a.slaRestante < 0 ? `❌ Vencido (${a.slaRestante}h)` : `⚠️ ${a.slaRestante}h restantes`}
+                        </Td>
+                        <Td>
+                          <Button size="xs" colorScheme="blue" variant="outline" onClick={() => handleActionVerSLA(a)}>
+                            Ver SLA
+                          </Button>
+                        </Td>
                       </Tr>
-                    </Thead>
-                    <Tbody>
-                      {alertas.slice(0, 6).map((alerta) => (
-                        <Tr
-                          key={alerta.id}
-                          bg={alerta.slaRestante < 0 ? 'red.50' : 'white'}
-                          _hover={{ bg: alerta.slaRestante < 0 ? 'red.100' : 'gray.50' }}
-                        >
-                          <Td fontWeight="bold" fontFamily="monospace" fontSize="xs">
-                            {alerta.protocolo}
-                          </Td>
-                          <Td fontSize="sm">{alerta.categoria}</Td>
-                          <Td>
-                            <Badge
-                              colorScheme={
-                                alerta.status === 'Aberto'
-                                  ? 'blue'
-                                  : alerta.status === 'Em Análise'
-                                    ? 'yellow'
-                                    : alerta.status === 'Em Andamento'
-                                      ? 'purple'
-                                      : 'orange'
-                              }
-                            >
-                              {alerta.status}
-                            </Badge>
-                          </Td>
-                          <Td>
-                            <Badge colorScheme={alerta.prioridade === 'Crítica' ? 'red' : 'orange'}>
-                              {alerta.prioridade}
-                            </Badge>
-                          </Td>
-                          <Td>
-                            <HStack spacing={1}>
-                              <Box
-                                width="20px"
-                                height="6px"
-                                bg={alerta.slaRestante < 0 ? 'red.500' : 'orange.500'}
-                                borderRadius="full"
-                              />
-                              <Text fontSize="xs" color={alerta.slaRestante < 0 ? 'red.600' : 'orange.600'}>
-                                {alerta.slaRestante < 0 ? '❌' : '⚠️'} {Math.abs(alerta.slaRestante)}h
-                              </Text>
-                            </HStack>
-                          </Td>
-                          <Td>
-                            <Button size="xs" colorScheme="primary" variant="outline">
-                              Ver
-                            </Button>
-                          </Td>
-                        </Tr>
-                      ))}
-                    </Tbody>
-                  </Table>
-                </Box>
-
-                <Text fontSize="xs" color="gray.600" textAlign="center" width="100%">
-                  Mostrando {Math.min(6, alertas.length)} de {alertas.length} chamados com SLA crítico
-                </Text>
-              </VStack>
+                    ))}
+                  </Tbody>
+                </Table>
+              </Box>
             </CardBody>
           </Card>
         </VStack>
       </Container>
+
+      {/* Modal de Detalhes */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader borderBottomWidth="1px">Detalhes do SLA - {selectedProtocolo?.protocolo}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody py={6}>
+            <VStack align="stretch" spacing={4}>
+              <Box p={4} bg={selectedProtocolo?.slaRestante < 0 ? "red.50" : "green.50"} borderRadius="md">
+                <Text fontSize="xs" fontWeight="bold">SITUAÇÃO ATUAL</Text>
+                <Heading size="md" color={selectedProtocolo?.slaRestante < 0 ? "red.600" : "green.600"}>
+                  {selectedProtocolo?.slaRestante < 0 
+                    ? `Atrasado em ${Math.abs(selectedProtocolo.slaRestante)} horas` 
+                    : `Dentro do prazo (${selectedProtocolo?.slaRestante}h)`}
+                </Heading>
+              </Box>
+              <SimpleGrid columns={2} spacing={4}>
+                <Box>
+                  <Text fontSize="xs" color="gray.500">LIMITE SLA</Text>
+                  <Text fontWeight="bold">{selectedProtocolo?.slaDeadline ? new Date(selectedProtocolo.slaDeadline).toLocaleString() : 'Não definido'}</Text>
+                </Box>
+                <Box>
+                  <Text fontSize="xs" color="gray.500">CRIADO EM</Text>
+                  <Text fontWeight="bold">{selectedProtocolo?.criadoEm ? new Date(selectedProtocolo.criadoEm).toLocaleDateString() : '-'}</Text>
+                </Box>
+              </SimpleGrid>
+            </VStack>
+          </ModalBody>
+          <ModalFooter borderTopWidth="1px">
+            <Button variant="ghost" mr={3} onClick={onClose}>Fechar</Button>
+            <Button colorScheme="blue">Priorizar Chamado</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   )
 }
-
-
