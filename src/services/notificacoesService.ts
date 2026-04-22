@@ -1,7 +1,7 @@
 import { Notificacao } from '@/types/notificacao';
 
-export const fetchNotificacoesService = async (usuarioId: string): Promise<Notificacao[]> => {
-  return new Promise((resolve, reject) => {
+export const fetchNotificacoesService = async (): Promise<Notificacao[]> => {
+  return new Promise((resolve) => {
     setTimeout(() => {
       // Simulando o mock de notificações associadas a chamados abertos
       resolve([

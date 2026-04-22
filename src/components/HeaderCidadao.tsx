@@ -22,7 +22,7 @@ import { formatTimeAgo } from '@/utils/dateFormatter'
 
 export function HeaderCidadao() {
   const router = useRouter()
-  const { notificacoes, loading, error, marcarComoLida } = useNotificacoesStore()
+  const { notificacoes, loading, marcarComoLida } = useNotificacoesStore()
 
   const naoLidas = notificacoes.filter((n) => !n.lida)
 
@@ -88,12 +88,6 @@ export function HeaderCidadao() {
             <Box className="flex justify-center p-4">
               <Spinner size="sm" color="blue.500" />
             </Box>
-          )}
-
-          {error && (
-            <Text color="red.500" className="p-4 text-sm text-center">
-              {error}
-            </Text>
           )}
 
           {!loading && notificacoes.length === 0 && (
