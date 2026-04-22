@@ -4,7 +4,7 @@ export interface Orgao {
   id: string
   nome: string
   sigla: string
-  tipo: 'Municipal' | 'Estadual' | 'Concessionária'
+  tipo: 'Municipal' | 'Estadual' | 'Concessionária' | 'Federal'
   slaHoras: number
   responsavel: string
   email: string

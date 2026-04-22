@@ -9,18 +9,15 @@ import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
 
 const sidebarItems = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
   { label: 'Órgãos', href: '/admin/orgaos', icon: '🏢' },
-  { label: 'Competências', href: '/admin/competencias', icon: '🎯' },
+  { label: 'Matriz de Competências', href: '/admin/matriz', icon: '🎯' },
   { label: 'Usuários', href: '/admin/usuarios', icon: '👥' },
-  { label: 'Configurações', href: '/admin/configuracoes', icon: '⚙️' },
 ]
 
 const bottomNavItems = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
   { label: 'Órgãos', href: '/admin/orgaos', icon: '🏢' },
+  { label: 'Matriz', href: '/admin/matriz', icon: '🎯' },
   { label: 'Usuários', href: '/admin/usuarios', icon: '👥' },
-  { label: 'Mais', href: '/admin/configuracoes', icon: '⋯' },
 ]
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -40,10 +37,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <Box>
-      <Header titulo="Painel Administrativo" />
+      <Header titulo="Administração Recife Inteligente" />
       <Flex>
         <Sidebar items={sidebarItems} />
-        <Box flex={1} ml={{ base: 0, md: '250px' }} pb={isDesktop ? 0 : '80px'}>
+        <Box flex={1} ml={{ base: 0, md: '250px' }} pb={isDesktop ? 0 : '80px'} bg="gray.50" minH="100vh">
           {children}
         </Box>
       </Flex>

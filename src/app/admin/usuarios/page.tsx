@@ -104,6 +104,8 @@ const usuariosInitial: Usuario[] = [
   },
 ]
 
+const ORGAO_OPTIONS = ['PMR', 'COMPESA', 'Energisa', 'DETRAN-PE', 'GOPE']
+
 const gerarSenhaTemporaria = () => {
   return Math.random().toString(36).substring(2, 10).toUpperCase()
 }
@@ -179,7 +181,8 @@ export default function UsuariosPage() {
   }
 
   const usuariosFiltrados = usuarios.filter((u) => {
-    const matchBusca = u.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    const matchBusca =
+      u.nome.toLowerCase().includes(busca.toLowerCase()) ||
       u.email.toLowerCase().includes(busca.toLowerCase())
     const matchPerfil = filtroPerfil === 'todos' || u.perfil === filtroPerfil
     const matchOrgao = filtroOrgao === 'todos' || u.orgao === filtroOrgao
@@ -189,24 +192,30 @@ export default function UsuariosPage() {
   })
 
   return (
-    <Box>
-      {/* Header */}
-      <Box bg="linear-gradient(135deg, #1a365d 0%, #2d3748 100%)" color="white" py={6} px={4}>
-        <Container maxW="100%">
-          <VStack align="start" spacing={2}>
-            <Heading size="lg">👥 Usuários</Heading>
-            <Text opacity={0.8}>Gerencie os usuários do sistema</Text>
-          </VStack>
-        </Container>
-      </Box>
-
-      <Container maxW="100%" py={6} px={4}>
+    <Box bg="gray.50" minH="100vh">
+      <Container maxW="7xl" py={{ base: 6, md: 8 }} px={{ base: 4, md: 6 }}>
         <VStack spacing={6} align="stretch">
-          {/* Filtros */}
-          <Card>
+          <HStack
+            justify="space-between"
+            align={{ base: 'stretch', md: 'center' }}
+            flexDir={{ base: 'column', md: 'row' }}
+            spacing={4}
+          >
+            <Box>
+              <Heading size="lg" color="gray.800">Usuários</Heading>
+              <Text color="gray.600" mt={1}>
+                Gerencie permissões, status e vínculo dos usuários da plataforma.
+              </Text>
+            </Box>
+            <Button colorScheme="blue" leftIcon={<AddIcon />} onClick={handleAdicionarUsuario}>
+              + Novo Usuário
+            </Button>
+          </HStack>
+
+          <Card bg="white" borderWidth="1px" borderColor="gray.200" borderRadius="2xl" boxShadow="sm">
             <CardBody>
               <VStack spacing={4} align="stretch">
-                <Heading size="sm">🔍 Filtros</Heading>
+                <Heading size="sm" color="gray.700">Filtros</Heading>
                 <HStack spacing={3} flexWrap={{ base: 'wrap', md: 'nowrap' }}>
                   <Input
                     placeholder="Buscar por nome ou email..."
@@ -235,11 +244,11 @@ export default function UsuariosPage() {
                     maxW="150px"
                   >
                     <option value="todos">Todos órgãos</option>
-                    <option value="PMR">PMR</option>
-                    <option value="COMPESA">COMPESA</option>
-                    <option value="Energisa">Energisa</option>
-                    <option value="DETRAN-PE">DETRAN-PE</option>
-                    <option value="GOPE">GOPE</option>
+                    {ORGAO_OPTIONS.map((orgao) => (
+                      <option key={orgao} value={orgao}>
+                        {orgao}
+                      </option>
+                    ))}
                   </Select>
 
                   <Select
@@ -252,99 +261,97 @@ export default function UsuariosPage() {
                     <option value="ativo">Ativo</option>
                     <option value="inativo">Inativo</option>
                   </Select>
-
-                  <Box flex={1} />
-
-                  <Button
-                    colorScheme="green"
-                    leftIcon={<AddIcon />}
-                    onClick={handleAdicionarUsuario}
-                    size="sm"
-                  >
-                    + Novo Usuário
-                  </Button>
                 </HStack>
               </VStack>
             </CardBody>
           </Card>
 
-          {/* Tabela */}
-          <Box overflowX="auto">
-            <Table size="sm">
-              <Thead bg="gray.100">
-                <Tr>
-                  <Th>Nome</Th>
-                  <Th>Email</Th>
-                  <Th>Perfil</Th>
-                  <Th>Órgão</Th>
-                  <Th>Status</Th>
-                  <Th>Cadastro</Th>
-                  <Th>Ações</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {usuariosFiltrados.map((usuario) => (
-                  <Tr key={usuario.id}>
-                    <Td fontWeight="bold">{usuario.nome}</Td>
-                    <Td fontSize="sm" fontFamily="monospace">
-                      {usuario.email}
-                    </Td>
-                    <Td>
-                      <Badge
-                        colorScheme={
-                          usuario.perfil === 'admin'
-                            ? 'red'
-                            : usuario.perfil === 'gestor'
-                              ? 'blue'
-                              : 'green'
-                        }
-                      >
-                        {usuario.perfil === 'cidadao'
-                          ? '👤 Cidadão'
-                          : usuario.perfil === 'gestor'
-                            ? '💼 Gestor'
-                            : '🔐 Admin'}
-                      </Badge>
-                    </Td>
-                    <Td>{usuario.orgao ? <Badge colorScheme="purple">{usuario.orgao}</Badge> : '—'}</Td>
-                    <Td>
-                      <Badge colorScheme={usuario.status === 'ativo' ? 'green' : 'gray'}>
-                        {usuario.status === 'ativo' ? '✓ Ativo' : '⊗ Inativo'}
-                      </Badge>
-                    </Td>
-                    <Td fontSize="xs" color="gray.600">
-                      {usuario.dataCadastro}
-                    </Td>
-                    <Td>
-                      <HStack spacing={1}>
-                        <IconButton
-                          icon={<EditIcon />}
-                          aria-label="Editar"
-                          size="sm"
-                          colorScheme="blue"
-                          variant="ghost"
-                          onClick={() => handleEditarUsuario(usuario)}
-                        />
-                        <IconButton
-                          icon={usuario.status === 'ativo' ? <DeleteIcon /> : <ViewIcon />}
-                          aria-label={usuario.status === 'ativo' ? 'Desativar' : 'Ativar'}
-                          size="sm"
-                          colorScheme={usuario.status === 'ativo' ? 'red' : 'green'}
-                          variant="ghost"
-                          onClick={() => handleToggleStatus(usuario.id)}
-                        />
-                      </HStack>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
+          <Box bg="white" borderWidth="1px" borderColor="gray.200" borderRadius="2xl" boxShadow="sm" overflow="hidden">
+            <Box px={{ base: 4, md: 6 }} py={4} borderBottomWidth="1px" borderColor="gray.100" bg="gray.50">
+              <Text fontSize="sm" color="gray.600">
+                Exibindo {usuariosFiltrados.length} de {usuarios.length} usuário(s).
+              </Text>
+            </Box>
 
-          {/* Total */}
-          <Text fontSize="xs" color="gray.600" textAlign="right">
-            Exibindo {usuariosFiltrados.length} de {usuarios.length} usuário(s)
-          </Text>
+            <Box overflowX="auto" px={{ base: 2, md: 4 }} py={3}>
+              <Table size="sm">
+                <Thead>
+                  <Tr>
+                    <Th>Nome</Th>
+                    <Th>Email</Th>
+                    <Th>Perfil</Th>
+                    <Th>Órgão</Th>
+                    <Th>Status</Th>
+                    <Th>Cadastro</Th>
+                    <Th textAlign="right">Ações</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {usuariosFiltrados.map((usuario) => (
+                    <Tr key={usuario.id}>
+                      <Td fontWeight="bold">{usuario.nome}</Td>
+                      <Td fontSize="sm" fontFamily="monospace">
+                        {usuario.email}
+                      </Td>
+                      <Td>
+                        <Badge
+                          colorScheme={
+                            usuario.perfil === 'admin'
+                              ? 'red'
+                              : usuario.perfil === 'gestor'
+                                ? 'blue'
+                                : 'green'
+                          }
+                          variant="subtle"
+                        >
+                          {usuario.perfil === 'cidadao'
+                            ? 'Cidadão'
+                            : usuario.perfil === 'gestor'
+                              ? 'Gestor'
+                              : 'Admin'}
+                        </Badge>
+                      </Td>
+                      <Td>
+                        {usuario.orgao ? (
+                          <Badge colorScheme="purple" variant="subtle">{usuario.orgao}</Badge>
+                        ) : (
+                          '—'
+                        )}
+                      </Td>
+                      <Td>
+                        <Badge colorScheme={usuario.status === 'ativo' ? 'green' : 'gray'} variant="subtle">
+                          {usuario.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </Td>
+                      <Td fontSize="xs" color="gray.600">
+                        {usuario.dataCadastro}
+                      </Td>
+                      <Td>
+                        <HStack justify="flex-end" spacing={1}>
+                          <IconButton
+                            icon={<EditIcon />}
+                            aria-label="Editar"
+                            size="sm"
+                            colorScheme="blue"
+                            variant="ghost"
+                            onClick={() => handleEditarUsuario(usuario)}
+                          />
+                          <IconButton
+                            icon={usuario.status === 'ativo' ? <DeleteIcon /> : <ViewIcon />}
+                            aria-label={usuario.status === 'ativo' ? 'Desativar' : 'Ativar'}
+                            size="sm"
+                            colorScheme={usuario.status === 'ativo' ? 'red' : 'green'}
+                            variant="ghost"
+                            onClick={() => handleToggleStatus(usuario.id)}
+                          />
+                        </HStack>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
+          </Box>
         </VStack>
       </Container>
 
@@ -379,7 +386,15 @@ export default function UsuariosPage() {
                 <Text fontWeight="bold">Perfil *</Text>
                 <Select
                   value={formData.perfil || ''}
-                  onChange={(e) => setFormData({ ...formData, perfil: e.target.value as any })}
+                  onChange={(e) => {
+                    const novoPerfil = e.target.value as Usuario['perfil']
+                    setFormData((current) => ({
+                      ...current,
+                      perfil: novoPerfil,
+                      orgao: novoPerfil === 'cidadao' ? undefined : current.orgao,
+                      setor: novoPerfil === 'gestor' ? current.setor : undefined,
+                    }))
+                  }}
                   placeholder="Selecione..."
                 >
                   <option value="cidadao">Cidadão</option>
@@ -388,23 +403,25 @@ export default function UsuariosPage() {
                 </Select>
               </VStack>
 
+              {formData.perfil && formData.perfil !== 'cidadao' && (
+                <VStack align="start" spacing={2}>
+                  <Text fontWeight="bold">Órgão</Text>
+                  <Select
+                    value={formData.orgao || ''}
+                    onChange={(e) => setFormData({ ...formData, orgao: e.target.value || undefined })}
+                    placeholder="Selecione..."
+                  >
+                    {ORGAO_OPTIONS.map((orgao) => (
+                      <option key={orgao} value={orgao}>
+                        {orgao}
+                      </option>
+                    ))}
+                  </Select>
+                </VStack>
+              )}
+
               {formData.perfil === 'gestor' && (
                 <>
-                  <VStack align="start" spacing={2}>
-                    <Text fontWeight="bold">Órgão</Text>
-                    <Select
-                      value={formData.orgao || ''}
-                      onChange={(e) => setFormData({ ...formData, orgao: e.target.value })}
-                      placeholder="Selecione..."
-                    >
-                      <option value="PMR">PMR</option>
-                      <option value="COMPESA">COMPESA</option>
-                      <option value="Energisa">Energisa</option>
-                      <option value="DETRAN-PE">DETRAN-PE</option>
-                      <option value="GOPE">GOPE</option>
-                    </Select>
-                  </VStack>
-
                   <VStack align="start" spacing={2}>
                     <Text fontWeight="bold">Setor</Text>
                     <Input

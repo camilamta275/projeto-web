@@ -1,6 +1,5 @@
 'use client'
 
-import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef } from 'react'
 
 // REMOVIDO: import L from 'leaflet' (Isso causava o erro de window)

@@ -160,132 +160,108 @@ export default function OrgaosPage() {
   }
 
   return (
-    <Box>
-      {/* Header */}
-      <Box bg="linear-gradient(135deg, #1a365d 0%, #2d3748 100%)" color="white" py={6} px={4}>
-        <Container maxW="100%">
-          <VStack align="start" spacing={2}>
-            <Heading size="lg">🏢 Órgãos</Heading>
-            <Text opacity={0.8}>Gerencie os órgãos públicos da plataforma</Text>
-          </VStack>
-        </Container>
-      </Box>
-
-      <Container maxW="100%" py={6} px={4}>
+    <Box bg="gray.50" minH="100vh">
+      <Container maxW="7xl" py={{ base: 6, md: 8 }} px={{ base: 4, md: 6 }}>
         <VStack spacing={6} align="stretch">
-          {/* Botão Adicionar */}
-          <Button
-            colorScheme="green"
-            leftIcon={<AddIcon />}
-            onClick={handleAdicionarOrgao}
-            alignSelf="flex-start"
+          <HStack
+            justify="space-between"
+            align={{ base: 'stretch', md: 'center' }}
+            flexDir={{ base: 'column', md: 'row' }}
+            spacing={4}
           >
-            + Novo Órgão
-          </Button>
+            <Box>
+              <Heading size="lg" color="gray.800">Órgãos</Heading>
+              <Text color="gray.600" mt={1}>
+                Gerencie os órgãos vinculados à operação do Recife Inteligente.
+              </Text>
+            </Box>
+            <Button colorScheme="blue" leftIcon={<AddIcon />} onClick={handleAdicionarOrgao}>
+              + Novo Órgão
+            </Button>
+          </HStack>
 
-          {/* Grid de Cards */}
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-            {orgaos.map((orgao) => (
-              <Card
-                key={orgao.id}
-                borderTopWidth="4px"
-                borderTopColor={orgao.status === 'ativo' ? 'green.500' : 'gray.400'}
-                _hover={{ boxShadow: 'md' }}
-                transition="all 0.2s"
-              >
-                <CardBody>
-                  <VStack align="start" spacing={3} width="100%">
-                    {/* Header */}
-                    <HStack justify="space-between" width="100%">
-                      <VStack align="start" spacing={0}>
-                        <Text fontSize="xs" color="gray.600">
-                          Sigla
-                        </Text>
-                        <Heading size="sm">{orgao.sigla}</Heading>
+          <Box bg="white" borderWidth="1px" borderColor="gray.200" borderRadius="2xl" boxShadow="sm" p={{ base: 4, md: 5 }}>
+            <Text fontSize="sm" color="gray.600" mb={4}>
+              Total de {orgaos.length} órgão(s) cadastrados.
+            </Text>
+
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={4}>
+              {orgaos.map((orgao) => (
+                <Card
+                  key={orgao.id}
+                  bg="gray.50"
+                  borderWidth="1px"
+                  borderColor="gray.200"
+                  borderRadius="xl"
+                  boxShadow="xs"
+                  _hover={{ boxShadow: 'sm', transform: 'translateY(-1px)' }}
+                  transition="all 0.2s"
+                >
+                  <CardBody p={4}>
+                    <VStack align="start" spacing={4} width="100%">
+                      <HStack justify="space-between" width="100%" align="start">
+                        <Box>
+                          <Text fontSize="xs" color="gray.500" textTransform="uppercase" letterSpacing="widest">
+                            {orgao.sigla}
+                          </Text>
+                          <Heading size="sm" mt={1} color="gray.800">
+                            {orgao.nome}
+                          </Heading>
+                          <Text fontSize="sm" color="gray.600" mt={1}>
+                            {orgao.tipo}
+                          </Text>
+                        </Box>
+                        <Badge colorScheme={orgao.status === 'ativo' ? 'green' : 'gray'} borderRadius="full" px={2.5} py={1}>
+                          {orgao.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </HStack>
+
+                      <VStack align="start" spacing={2} width="100%">
+                        <Box>
+                          <Text fontSize="xs" color="gray.500">Responsável</Text>
+                          <Text fontSize="sm" color="gray.700">{orgao.responsavel}</Text>
+                        </Box>
+                        <Box>
+                          <Text fontSize="xs" color="gray.500">Email</Text>
+                          <Text fontSize="sm" color="blue.700">{orgao.email}</Text>
+                        </Box>
+                        <HStack spacing={2} flexWrap="wrap">
+                          <Badge colorScheme="blue" variant="subtle">SLA {orgao.slaDefault}h</Badge>
+                          <Badge colorScheme="purple" variant="subtle">{orgao.tipo}</Badge>
+                        </HStack>
                       </VStack>
-                      <Badge colorScheme={orgao.status === 'ativo' ? 'green' : 'gray'}>
-                        {orgao.status === 'ativo' ? '✓ Ativo' : '⊗ Inativo'}
-                      </Badge>
-                    </HStack>
-
-                    {/* Informações */}
-                    <VStack align="start" spacing={2} width="100%" fontSize="sm">
-                      <Box width="100%">
-                        <Text fontWeight="bold">{orgao.nome}</Text>
-                        <Text fontSize="xs" color="gray.600">
-                          {orgao.tipo}
-                        </Text>
-                      </Box>
 
                       <Box width="100%">
-                        <Text fontSize="xs" color="gray.600" fontWeight="bold">
-                          Responsável
-                        </Text>
-                        <Text fontSize="sm">{orgao.responsavel}</Text>
+                        <Text fontSize="xs" color="gray.500" mb={2}>Categorias atendidas</Text>
+                        <Wrap spacing={2}>
+                          {orgao.categorias.map((categoria, index) => (
+                            <Badge key={index} borderRadius="full" px={2.5} py={1} colorScheme="purple" variant="subtle">
+                              {categoria}
+                            </Badge>
+                          ))}
+                        </Wrap>
                       </Box>
 
-                      <Box width="100%">
-                        <Text fontSize="xs" color="gray.600" fontWeight="bold">
-                          Email
-                        </Text>
-                        <Text fontSize="xs" fontFamily="monospace" color="blue.600">
-                          {orgao.email}
-                        </Text>
-                      </Box>
-
-                      <Box width="100%">
-                        <Text fontSize="xs" color="gray.600" fontWeight="bold">
-                          SLA Padrão
-                        </Text>
-                        <Badge colorScheme="blue">{orgao.slaDefault}h</Badge>
-                      </Box>
+                      <HStack spacing={2} width="100%">
+                        <Button size="sm" colorScheme="blue" variant="outline" flex={1} onClick={() => handleEditarOrgao(orgao)}>
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          colorScheme={orgao.status === 'ativo' ? 'red' : 'green'}
+                          variant="outline"
+                          flex={1}
+                          onClick={() => handleToggleStatus(orgao.id)}
+                        >
+                          {orgao.status === 'ativo' ? 'Desativar' : 'Ativar'}
+                        </Button>
+                      </HStack>
                     </VStack>
-
-                    {/* Categorias */}
-                    <Box width="100%">
-                      <Text fontSize="xs" color="gray.600" fontWeight="bold" mb={2}>
-                        Categorias
-                      </Text>
-                      <Wrap spacing={1}>
-                        {orgao.categorias.map((cat, idx) => (
-                          <Badge key={idx} size="sm" colorScheme="purple">
-                            {cat}
-                          </Badge>
-                        ))}
-                      </Wrap>
-                    </Box>
-
-                    {/* Botões */}
-                    <HStack spacing={2} width="100%" pt={2}>
-                      <Button
-                        size="sm"
-                        colorScheme="blue"
-                        variant="outline"
-                        flex={1}
-                        onClick={() => handleEditarOrgao(orgao)}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        colorScheme={orgao.status === 'ativo' ? 'red' : 'green'}
-                        variant="outline"
-                        flex={1}
-                        onClick={() => handleToggleStatus(orgao.id)}
-                      >
-                        {orgao.status === 'ativo' ? 'Desativar' : 'Ativar'}
-                      </Button>
-                    </HStack>
-                  </VStack>
-                </CardBody>
-              </Card>
-            ))}
-          </SimpleGrid>
-
-          {/* Total */}
-          <Text fontSize="xs" color="gray.600" textAlign="right">
-            Total: {orgaos.length} órgão(s)
-          </Text>
+                  </CardBody>
+                </Card>
+              ))}
+            </SimpleGrid>
+          </Box>
         </VStack>
       </Container>
 
