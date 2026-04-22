@@ -22,7 +22,7 @@ interface AppStore {
 }
 
 // Create the Zustand store
-const useAppStore = create<AppStore>((set, get) => ({
+export const useAppStore = create<AppStore>((set, get) => ({
   demands: [
     {
       id: '1',
@@ -97,5 +97,3 @@ const useAppStore = create<AppStore>((set, get) => ({
     return get().demands.find((demand) => demand.id === id);
   },
 }));
-
-export default useAppStore;

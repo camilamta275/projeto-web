@@ -3,7 +3,7 @@
 import { Search, Menu } from "lucide-react"
 import { Box, Flex, Input, InputGroup, InputLeftElement, Avatar, IconButton } from "@chakra-ui/react"
 import { NotificationPanel } from "@/components/notification-panel"
-import useAppStore from "../store/useAppStore"
+import {useAppStore} from "../store/useAppStore"
 
 interface DashboardHeaderProps {
   title: string

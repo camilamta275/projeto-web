@@ -10,7 +10,7 @@ import { UserManagement } from "@/components/admin/user-management"
 import { ManagerProfile } from "@/components/manager-profile"
 import { Box, Flex, Card, CardHeader, CardBody, Text } from "@chakra-ui/react"
 import { BarChart3, Users, Clock, TrendingUp } from "lucide-react"
-import useAppStore from "../store/useAppStore"
+import {useAppStore} from "../store/useAppStore"
 
 interface GestorDashboardProps {
   showAdmin?: boolean

@@ -2,10 +2,19 @@
 
 import { useState } from "react"
 import { ArrowLeft, Eye, EyeOff, CheckCircle2, Circle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
+import {
+  Box,
+  Flex,
+  Button,
+  Input,
+  FormControl,
+  FormLabel,
+  Text,
+  IconButton,
+  InputGroup,
+  InputRightElement
+} from "@chakra-ui/react"
+import useAppStore from "../../store/useAppStore"
 
 interface MobileRegisterProps {
   onBack: () => void
@@ -13,6 +22,9 @@ interface MobileRegisterProps {
 }
 
 export function MobileRegister({ onBack, onRegister }: MobileRegisterProps) {
+  // Integração opcional com store se você precisar salvar o usuário após o registro
+  // const registerUser = useAppStore((state) => state.registerUser)
+
   const [formData, setFormData] = useState({
     name: "",
     cpf: "",
@@ -46,38 +58,41 @@ export function MobileRegister({ onBack, onRegister }: MobileRegisterProps) {
     { label: "Senhas coincidem", met: formData.password === formData.confirmPassword && formData.confirmPassword !== "" },
   ]
 
+  const handleRegister = () => {
+    // if (registerUser) registerUser(formData)
+    onRegister()
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <Flex direction="column" minH="100vh" bg="gray.50" _dark={{ bg: "gray.900" }}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card border-b px-4 py-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight">Criar Conta</h1>
-            <p className="text-sm text-muted-foreground">Preencha seus dados</p>
-          </div>
-        </div>
-      </header>
+      <Box as="header" position="sticky" top="0" zIndex="50" bg="white" _dark={{ bg: "gray.800" }} borderBottomWidth="1px" borderColor="gray.200" _dark={{ borderColor: "gray.700" }} px="4" py="4">
+        <Flex align="center" gap="4">
+          <IconButton aria-label="Voltar" variant="ghost" icon={<ArrowLeft className="h-5 w-5" />} onClick={onBack} />
+          <Box>
+            <Text as="h1" fontSize="lg" fontWeight="semibold" color="gray.900" _dark={{ color: "white" }}>Criar Conta</Text>
+            <Text fontSize="sm" color="gray.500">Preencha seus dados</Text>
+          </Box>
+        </Flex>
+      </Box>
 
       {/* Formulário */}
-      <main className="flex-1 p-6 space-y-5 pb-32">
-        <div className="space-y-2">
-          <Label htmlFor="name">Nome Completo</Label>
+      <Box as="main" flex="1" p="6" pb="32" className="space-y-5">
+        <FormControl isRequired>
+          <FormLabel>Nome Completo</FormLabel>
           <Input
-            id="name"
             placeholder="Seu nome completo"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="h-12"
+            size="lg"
+            bg="white"
+            _dark={{ bg: "gray.800" }}
           />
-        </div>
+        </FormControl>
 
-        <div className="space-y-2">
-          <Label htmlFor="cpf">CPF</Label>
+        <FormControl isRequired>
+          <FormLabel>CPF</FormLabel>
           <Input
-            id="cpf"
             inputMode="numeric"
             placeholder="000.000.000-00"
             value={formData.cpf}
@@ -85,26 +100,29 @@ export function MobileRegister({ onBack, onRegister }: MobileRegisterProps) {
               const formatted = formatCPF(e.target.value)
               if (formatted.length <= 14) setFormData({ ...formData, cpf: formatted })
             }}
-            className="h-12 font-mono"
+            size="lg"
+            fontFamily="mono"
+            bg="white"
+            _dark={{ bg: "gray.800" }}
           />
-        </div>
+        </FormControl>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">E-mail</Label>
+        <FormControl isRequired>
+          <FormLabel>E-mail</FormLabel>
           <Input
-            id="email"
             type="email"
             placeholder="seu@email.com"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="h-12"
+            size="lg"
+            bg="white"
+            _dark={{ bg: "gray.800" }}
           />
-        </div>
+        </FormControl>
 
-        <div className="space-y-2">
-          <Label htmlFor="phone">Telefone</Label>
+        <FormControl isRequired>
+          <FormLabel>Telefone</FormLabel>
           <Input
-            id="phone"
             inputMode="tel"
             placeholder="(00) 00000-0000"
             value={formData.phone}
@@ -112,93 +130,102 @@ export function MobileRegister({ onBack, onRegister }: MobileRegisterProps) {
               const formatted = formatPhone(e.target.value)
               if (formatted.length <= 15) setFormData({ ...formData, phone: formatted })
             }}
-            className="h-12 font-mono"
+            size="lg"
+            fontFamily="mono"
+            bg="white"
+            _dark={{ bg: "gray.800" }}
           />
-        </div>
+        </FormControl>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Senha</Label>
-          <div className="relative">
+        <FormControl isRequired>
+          <FormLabel>Senha</FormLabel>
+          <InputGroup size="lg">
             <Input
-              id="password"
               type={showPassword ? "text" : "password"}
               placeholder="Crie uma senha forte"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="h-12 pr-12"
+              bg="white"
+              _dark={{ bg: "gray.800" }}
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
+            <InputRightElement>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                icon={showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                onClick={() => setShowPassword(!showPassword)}
+                color="gray.500"
+              />
+            </InputRightElement>
+          </InputGroup>
+        </FormControl>
 
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-          <div className="relative">
+        <FormControl isRequired>
+          <FormLabel>Confirmar Senha</FormLabel>
+          <InputGroup size="lg">
             <Input
-              id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               placeholder="Digite a senha novamente"
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              className="h-12 pr-12"
+              bg="white"
+              _dark={{ bg: "gray.800" }}
             />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-            </button>
-          </div>
-        </div>
+            <InputRightElement>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                icon={showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                color="gray.500"
+              />
+            </InputRightElement>
+          </InputGroup>
+        </FormControl>
 
         {/* Requisitos da senha */}
         {formData.password && (
-          <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-            <p className="text-sm font-medium text-foreground">Requisitos da senha:</p>
+          <Box borderRadius="lg" bg="gray.100" _dark={{ bg: "gray.800" }} p="4" className="space-y-2">
+            <Text fontSize="sm" fontWeight="medium" color="gray.900" _dark={{ color: "gray.100" }}>Requisitos da senha:</Text>
             {passwordRequirements.map((req, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <Flex key={index} align="center" gap="2">
                 {req.met ? (
-                  <CheckCircle2 className="h-4 w-4 text-status-completed" />
+                  <CheckCircle2 className="h-4 w-4 text-green-500" color="var(--chakra-colors-green-500)" />
                 ) : (
-                  <Circle className="h-4 w-4 text-muted-foreground" />
+                  <Circle className="h-4 w-4 text-gray-400" color="var(--chakra-colors-gray-400)" />
                 )}
-                <span className={cn(
-                  "text-sm",
-                  req.met ? "text-status-completed" : "text-muted-foreground"
-                )}>
+                <Text fontSize="sm" color={req.met ? "green.500" : "gray.500"}>
                   {req.label}
-                </span>
-              </div>
+                </Text>
+              </Flex>
             ))}
-          </div>
+          </Box>
         )}
 
         {/* Termos */}
-        <p className="text-xs text-muted-foreground text-center leading-relaxed">
+        <Text fontSize="xs" color="gray.500" textAlign="center" lineHeight="relaxed">
           Ao criar sua conta, você concorda com os{" "}
-          <a href="#" className="text-primary hover:underline">Termos de Uso</a>
+          <Text as="a" href="#" color="blue.500" _hover={{ textDecoration: "underline" }}>Termos de Uso</Text>
           {" "}e{" "}
-          <a href="#" className="text-primary hover:underline">Política de Privacidade</a>.
-        </p>
-      </main>
+          <Text as="a" href="#" color="blue.500" _hover={{ textDecoration: "underline" }}>Política de Privacidade</Text>.
+        </Text>
+      </Box>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-card border-t p-4">
+      <Box as="footer" position="fixed" bottom="0" left="0" right="0" bg="white" _dark={{ bg: "gray.800" }} borderTopWidth="1px" borderColor="gray.200" _dark={{ borderColor: "gray.700" }} p="4">
         <Button
-          className="w-full h-12 text-base font-medium"
-          onClick={onRegister}
-          disabled={!passwordRequirements.every(r => r.met)}
+          w="full"
+          size="lg"
+          colorScheme="blue"
+          fontWeight="medium"
+          onClick={handleRegister}
+          isDisabled={!passwordRequirements.every(r => r.met)}
         >
           Criar Conta
         </Button>
-      </footer>
-    </div>
+      </Box>
+    </Flex>
   )
 }

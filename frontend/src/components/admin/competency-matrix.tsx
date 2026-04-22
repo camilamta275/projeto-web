@@ -2,61 +2,51 @@
 
 import { useState } from "react"
 import { Plus, Pencil, Trash2, MoreHorizontal, Building2, Clock, Power } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
+  Box,
+  Flex,
+  Button,
+  Badge,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  IconButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  Input,
+  FormControl,
+  FormLabel,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+  Switch,
+  Card,
+  CardHeader,
+  CardBody,
+  Heading,
+  Text
+} from "@chakra-ui/react"
+import {useAppStore} from "../../store/useAppStore"
 
-interface RoutingRule {
+export interface RoutingRule {
   id: string
   category: string
   responsibleOrg: string
   slaPadrao: number
   active: boolean
 }
-
-const initialRules: RoutingRule[] = [
-  { id: "1", category: "Vazamento de Água", responsibleOrg: "Compesa", slaPadrao: 24, active: true },
-  { id: "2", category: "Buraco na Via", responsibleOrg: "Emlurb", slaPadrao: 72, active: true },
-  { id: "3", category: "Iluminação Pública", responsibleOrg: "Celpe", slaPadrao: 48, active: true },
-  { id: "4", category: "Lixo Acumulado", responsibleOrg: "Emlurb", slaPadrao: 24, active: true },
-  { id: "5", category: "Semáforo com Defeito", responsibleOrg: "CTTU", slaPadrao: 12, active: true },
-  { id: "6", category: "Árvore Caída", responsibleOrg: "Emlurb", slaPadrao: 6, active: true },
-  { id: "7", category: "Esgoto a Céu Aberto", responsibleOrg: "Compesa", slaPadrao: 24, active: false },
-  { id: "8", category: "Calçada Danificada", responsibleOrg: "Prefeitura", slaPadrao: 168, active: true },
-]
 
 const orgaos = [
   "Compesa",
@@ -82,8 +72,14 @@ const categories = [
 ]
 
 export function CompetencyMatrix() {
-  const [rules, setRules] = useState<RoutingRule[]>(initialRules)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  // Integração com Store Global
+  const routingRules = useAppStore((state) => state.routingRules) || []
+  const addRoutingRule = useAppStore((state) => state.addRoutingRule)
+  const updateRoutingRule = useAppStore((state) => state.updateRoutingRule)
+  const deleteRoutingRule = useAppStore((state) => state.deleteRoutingRule)
+  const toggleRoutingRuleActive = useAppStore((state) => state.toggleRoutingRuleActive)
+
+  const { isOpen, onOpen, onClose } = useDisclosure()
   const [editingRule, setEditingRule] = useState<RoutingRule | null>(null)
   const [formData, setFormData] = useState({
     category: "",
@@ -110,34 +106,30 @@ export function CompetencyMatrix() {
         active: true,
       })
     }
-    setIsDialogOpen(true)
+    onOpen()
   }
 
   const handleSave = () => {
     if (editingRule) {
-      setRules(rules.map(r => 
-        r.id === editingRule.id 
-          ? { ...r, ...formData }
-          : r
-      ))
-    } else {
-      const newRule: RoutingRule = {
-        id: Date.now().toString(),
-        ...formData,
+      if (updateRoutingRule) {
+        updateRoutingRule(editingRule.id, formData)
       }
-      setRules([...rules, newRule])
+    } else {
+      if (addRoutingRule) {
+        addRoutingRule({ id: Date.now().toString(), ...formData })
+      }
     }
-    setIsDialogOpen(false)
+    onClose()
   }
 
   const handleDelete = (id: string) => {
-    setRules(rules.filter(r => r.id !== id))
+    if (deleteRoutingRule) deleteRoutingRule(id)
   }
 
   const handleToggleActive = (id: string) => {
-    setRules(rules.map(r => 
-      r.id === id ? { ...r, active: !r.active } : r
-    ))
+    if (toggleRoutingRuleActive) {
+      toggleRoutingRuleActive(id)
+    }
   }
 
   const formatSLA = (hours: number) => {

@@ -4,7 +4,7 @@ import { Plus, ChevronRight, Building2 } from "lucide-react"
 import { Box, Flex, Button, Card, CardHeader, CardBody, Text, Avatar, IconButton } from "@chakra-ui/react"
 import { StatusBadge } from "@/components/status-badge"
 import { NotificationPanel } from "@/components/notification-panel"
-import { useAppStore } from "../../store/useAppStore"
+import {useAppStore} from "../../store/useAppStore"
 import type { Ticket } from "@/components/ticket-table"
 
 interface MobileHomeProps {

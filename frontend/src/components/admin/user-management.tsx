@@ -4,54 +4,53 @@ import { useState } from "react"
 import { 
   ChevronLeft,
   ChevronRight,
-  Mail,
   MoreHorizontal,
   Plus,
   RefreshCw,
   Search,
-  Shield,
   User,
   UserCheck,
   UserX
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import {
+  Box,
+  Flex,
+  Button,
+  Input,
+  Badge,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  IconButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+  Card,
+  CardBody,
+  Heading,
+  Text,
+  InputGroup,
+  InputLeftElement
+} from "@chakra-ui/react"
+import { useAppStore } from "../../store/useAppStore"
 
-interface SystemUser {
+export interface SystemUser {
   id: string
   name: string
   email: string
@@ -61,54 +60,6 @@ interface SystemUser {
   status: "active" | "inactive"
   createdAt: string
 }
-
-const mockUsers: SystemUser[] = [
-  {
-    id: "1",
-    name: "Maria Costa",
-    email: "maria.costa@pe.gov.br",
-    profile: "manager",
-    department: "Secretaria de Infraestrutura",
-    sector: "Zona Norte",
-    status: "active",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "João Silva",
-    email: "joao.silva@email.com",
-    profile: "citizen",
-    status: "active",
-    createdAt: "2024-02-20",
-  },
-  {
-    id: "3",
-    name: "Carlos Souza",
-    email: "carlos.souza@pe.gov.br",
-    profile: "admin",
-    department: "TI - Governo",
-    status: "active",
-    createdAt: "2023-06-10",
-  },
-  {
-    id: "4",
-    name: "Ana Santos",
-    email: "ana.santos@pe.gov.br",
-    profile: "manager",
-    department: "Compesa",
-    sector: "Saneamento",
-    status: "inactive",
-    createdAt: "2023-09-05",
-  },
-  {
-    id: "5",
-    name: "Pedro Lima",
-    email: "pedro.lima@email.com",
-    profile: "citizen",
-    status: "active",
-    createdAt: "2024-03-12",
-  },
-]
 
 const departments = [
   "Secretaria de Infraestrutura",
@@ -130,9 +81,9 @@ const sectors = [
 ]
 
 const profileLabels = {
-  citizen: { label: "Cidadão", color: "bg-secondary text-secondary-foreground" },
-  manager: { label: "Gestor", color: "bg-primary text-primary-foreground" },
-  admin: { label: "Admin", color: "bg-status-critical text-status-critical-foreground" },
+  citizen: { label: "Cidadão", colorScheme: "gray" },
+  manager: { label: "Gestor", colorScheme: "blue" },
+  admin: { label: "Admin", colorScheme: "red" },
 }
 
 function generatePassword() {
@@ -145,7 +96,12 @@ function generatePassword() {
 }
 
 export function UserManagement() {
-  const [users, setUsers] = useState<SystemUser[]>(mockUsers)
+  // Integração com a Store Global
+  const systemUsers = useAppStore((state) => state.systemUsers) || []
+  const addSystemUser = useAppStore((state) => state.addSystemUser)
+  const updateSystemUser = useAppStore((state) => state.updateSystemUser)
+  const toggleSystemUserStatus = useAppStore((state) => state.toggleSystemUserStatus)
+
   const [searchQuery, setSearchQuery] = useState("")
   const [filterProfile, setFilterProfile] = useState<string>("all")
   const [filterDepartment, setFilterDepartment] = useState<string>("all")
@@ -166,7 +122,7 @@ export function UserManagement() {
   const itemsPerPage = 10
 
   // Filtrar usuários
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = systemUsers.filter((user: SystemUser) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -194,7 +150,9 @@ export function UserManagement() {
       status: "active",
       createdAt: new Date().toISOString().split("T")[0],
     }
-    setUsers([user, ...users])
+    
+    if (addSystemUser) addSystemUser(user)
+
     setShowNewUserDialog(false)
     setNewUser({
       name: "",
@@ -208,19 +166,15 @@ export function UserManagement() {
 
   const handleEditUser = () => {
     if (!selectedUser) return
-    setUsers(users.map((u) => (u.id === selectedUser.id ? selectedUser : u)))
+    
+    if (updateSystemUser) updateSystemUser(selectedUser.id, selectedUser)
+    
     setShowEditDialog(false)
     setSelectedUser(null)
   }
 
-  const handleToggleStatus = (user: SystemUser) => {
-    setUsers(
-      users.map((u) =>
-        u.id === user.id
-          ? { ...u, status: u.status === "active" ? "inactive" : "active" }
-          : u
-      )
-    )
+  const handleToggleStatus = (id: string) => {
+    if (toggleSystemUserStatus) toggleSystemUserStatus(id)
   }
 
   const handleResetPassword = (user: SystemUser) => {
@@ -231,428 +185,371 @@ export function UserManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Gestão de Usuários</h1>
-          <p className="text-muted-foreground">
+      <Flex direction={{ base: "column", sm: "row" }} align={{ sm: "center" }} justify="space-between" gap="4">
+        <Box>
+          <Heading size="lg" letterSpacing="tight">Gestão de Usuários</Heading>
+          <Text color="gray.500">
             Gerencie os usuários do sistema
-          </p>
-        </div>
-        <Button onClick={() => setShowNewUserDialog(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
+          </Text>
+        </Box>
+        <Button colorScheme="blue" onClick={() => setShowNewUserDialog(true)} leftIcon={<Plus className="h-4 w-4" />}>
           Novo Usuário
         </Button>
-      </div>
+      </Flex>
 
       {/* Filtros */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome ou e-mail..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Select value={filterProfile} onValueChange={setFilterProfile}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Perfil" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Perfis</SelectItem>
-                  <SelectItem value="citizen">Cidadão</SelectItem>
-                  <SelectItem value="manager">Gestor</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
+      <Card bg="white" _dark={{ bg: "gray.800" }} shadow="sm" borderRadius="lg">
+        <CardBody p="4">
+          <Flex direction={{ base: "column", lg: "row" }} align={{ lg: "center" }} gap="4">
+            <Box flex="1">
+              <InputGroup>
+                <InputLeftElement pointerEvents="none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </InputLeftElement>
+                <Input
+                  placeholder="Buscar por nome ou e-mail..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  bg="white"
+                  _dark={{ bg: "gray.900" }}
+                />
+              </InputGroup>
+            </Box>
+            <Flex flexWrap="wrap" gap="2">
+              <Select w={{ base: "full", sm: "140px" }} value={filterProfile} onChange={(e) => setFilterProfile(e.target.value)}>
+                <option value="all">Todos Perfis</option>
+                <option value="citizen">Cidadão</option>
+                <option value="manager">Gestor</option>
+                <option value="admin">Admin</option>
               </Select>
 
-              <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Órgão" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Órgãos</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {d}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+              <Select w={{ base: "full", sm: "180px" }} value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)}>
+                <option value="all">Todos Órgãos</option>
+                {departments.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
               </Select>
 
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[130px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Status</SelectItem>
-                  <SelectItem value="active">Ativo</SelectItem>
-                  <SelectItem value="inactive">Inativo</SelectItem>
-                </SelectContent>
+              <Select w={{ base: "full", sm: "130px" }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                <option value="all">Todos Status</option>
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
               </Select>
-            </div>
-          </div>
-        </CardContent>
+            </Flex>
+          </Flex>
+        </CardBody>
       </Card>
 
       {/* Tabela */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Perfil</TableHead>
-                <TableHead className="hidden md:table-cell">Órgão</TableHead>
-                <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+      <Card bg="white" _dark={{ bg: "gray.800" }} shadow="sm" borderRadius="lg" overflow="hidden">
+        <TableContainer>
+          <Table variant="simple">
+            <Thead bg="gray.50" _dark={{ bg: "gray.700" }}>
+              <Tr>
+                <Th>Nome</Th>
+                <Th>E-mail</Th>
+                <Th>Perfil</Th>
+                <Th display={{ base: "none", md: "table-cell" }}>Órgão</Th>
+                <Th display={{ base: "none", lg: "table-cell" }}>Cadastro</Th>
+                <Th>Status</Th>
+                <Th width="50px"></Th>
+              </Tr>
+            </Thead>
+            <Tbody>
               {paginatedUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                  <TableCell>
-                    <Badge className={cn("font-normal", profileLabels[user.profile].color)}>
+                <Tr key={user.id}>
+                  <Td fontWeight="medium">{user.name}</Td>
+                  <Td color="gray.500">{user.email}</Td>
+                  <Td>
+                    <Badge colorScheme={profileLabels[user.profile].colorScheme}>
                       {profileLabels[user.profile].label}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
+                  </Td>
+                  <Td display={{ base: "none", md: "table-cell" }} color="gray.500">
                     {user.department || "-"}
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell text-muted-foreground">
+                  </Td>
+                  <Td display={{ base: "none", lg: "table-cell" }} color="gray.500">
                     {new Date(user.createdAt).toLocaleDateString("pt-BR")}
-                  </TableCell>
-                  <TableCell>
+                  </Td>
+                  <Td>
                     <Badge
-                      variant={user.status === "active" ? "default" : "secondary"}
-                      className={cn(
-                        "font-normal",
-                        user.status === "active"
-                          ? "bg-status-completed text-status-completed-foreground"
-                          : "bg-muted text-muted-foreground"
-                      )}
+                      colorScheme={user.status === "active" ? "green" : "gray"}
                     >
                       {user.status === "active" ? "Ativo" : "Inativo"}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Ações</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
+                  </Td>
+                  <Td>
+                    <Menu>
+                      <MenuButton
+                        as={IconButton}
+                        icon={<MoreHorizontal className="h-4 w-4" />}
+                        variant="ghost"
+                        size="sm"
+                      />
+                      <MenuList>
+                        <MenuItem
+                          icon={<User className="h-4 w-4" />}
                           onClick={() => {
                             setSelectedUser(user)
                             setShowEditDialog(true)
                           }}
                         >
-                          <User className="mr-2 h-4 w-4" />
                           Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
+                        </MenuItem>
+                        <MenuItem 
+                          icon={user.status === "active" ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                          onClick={() => handleToggleStatus(user.id)}
+                        >
                           {user.status === "active" ? (
-                            <>
-                              <UserX className="mr-2 h-4 w-4" />
-                              Desativar
-                            </>
+                            "Desativar"
                           ) : (
-                            <>
-                              <UserCheck className="mr-2 h-4 w-4" />
-                              Reativar
-                            </>
+                            "Reativar"
                           )}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleResetPassword(user)}>
-                          <RefreshCw className="mr-2 h-4 w-4" />
+                        </MenuItem>
+                        <MenuDivider />
+                        <MenuItem icon={<RefreshCw className="h-4 w-4" />} onClick={() => handleResetPassword(user)}>
                           Redefinir Senha
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                        </MenuItem>
+                      </MenuList>
+                    </Menu>
+                  </Td>
+                </Tr>
               ))}
-            </TableBody>
+            </Tbody>
           </Table>
+        </TableContainer>
 
           {/* Paginação */}
-          <div className="flex items-center justify-between border-t px-4 py-3">
-            <p className="text-sm text-muted-foreground">
+        <Flex align="center" justify="space-between" px="4" py="3" borderTopWidth="1px" borderColor="gray.100" _dark={{ borderColor: "gray.700" }}>
+          <Text fontSize="sm" color="gray.500">
               Mostrando {paginatedUsers.length} de {filteredUsers.length} usuários
-            </p>
-            <div className="flex items-center gap-2">
+          </Text>
+          <Flex align="center" gap="2">
               <Button
                 variant="outline"
-                size="icon"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm">
-                Página {currentPage} de {totalPages || 1}
-              </span>
+              size="sm"
+              isDisabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Text fontSize="sm">
+              Página {currentPage} de {totalPages || 1}
+            </Text>
               <Button
                 variant="outline"
-                size="icon"
-                disabled={currentPage === totalPages || totalPages === 0}
-                onClick={() => setCurrentPage((p) => p + 1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
+              size="sm"
+              isDisabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </Flex>
+        </Flex>
       </Card>
 
       {/* Dialog: Novo Usuário */}
-      <Dialog open={showNewUserDialog} onOpenChange={setShowNewUserDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Novo Usuário</DialogTitle>
-            <DialogDescription>
+      <Modal isOpen={showNewUserDialog} onClose={() => setShowNewUserDialog(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent bg="white" _dark={{ bg: "gray.800" }}>
+          <ModalHeader>
+            Novo Usuário
+            <Text fontSize="sm" color="gray.500" fontWeight="normal" mt="1">
               Preencha os dados para criar uma nova conta
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
+            </Text>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody className="space-y-4">
+            <FormControl isRequired>
+              <FormLabel>Nome Completo</FormLabel>
               <Input
-                id="name"
                 value={newUser.name}
                 onChange={(e) => setNewUser((u) => ({ ...u, name: e.target.value }))}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>E-mail</FormLabel>
               <Input
-                id="email"
                 type="email"
                 value={newUser.email}
                 onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))}
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Perfil</Label>
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>Perfil</FormLabel>
               <Select
                 value={newUser.profile}
-                onValueChange={(v: "citizen" | "manager" | "admin") =>
-                  setNewUser((u) => ({ ...u, profile: v }))
+                onChange={(e) =>
+                  setNewUser((u) => ({ ...u, profile: e.target.value as "citizen" | "manager" | "admin" }))
                 }
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="citizen">Cidadão</SelectItem>
-                  <SelectItem value="manager">Gestor</SelectItem>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                </SelectContent>
+                <option value="citizen">Cidadão</option>
+                <option value="manager">Gestor</option>
+                <option value="admin">Administrador</option>
               </Select>
-            </div>
+            </FormControl>
 
             {newUser.profile !== "citizen" && (
-              <div className="space-y-2">
-                <Label>Órgão</Label>
+              <FormControl isRequired>
+                <FormLabel>Órgão</FormLabel>
                 <Select
                   value={newUser.department}
-                  onValueChange={(v) => setNewUser((u) => ({ ...u, department: v }))}
+                  onChange={(e) => setNewUser((u) => ({ ...u, department: e.target.value }))}
+                  placeholder="Selecione o órgão"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o órgão" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                  {departments.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
                 </Select>
-              </div>
+              </FormControl>
             )}
 
             {newUser.profile === "manager" && (
-              <div className="space-y-2">
-                <Label>Setor de Atuação</Label>
+              <FormControl isRequired>
+                <FormLabel>Setor de Atuação</FormLabel>
                 <Select
                   value={newUser.sector}
-                  onValueChange={(v) => setNewUser((u) => ({ ...u, sector: v }))}
+                  onChange={(e) => setNewUser((u) => ({ ...u, sector: e.target.value }))}
+                  placeholder="Selecione o setor"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o setor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sectors.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                  {sectors.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </Select>
-              </div>
+              </FormControl>
             )}
 
-            <div className="space-y-2">
-              <Label>Senha Temporária</Label>
-              <div className="flex gap-2">
+            <FormControl>
+              <FormLabel>Senha Temporária</FormLabel>
+              <Flex gap="2">
                 <Input
                   value={newUser.tempPassword}
                   readOnly
-                  className="font-mono bg-muted"
+                  fontFamily="mono"
+                  bg="gray.50"
+                  _dark={{ bg: "gray.700" }}
                 />
-                <Button
-                  variant="outline"
-                  size="icon"
+                <IconButton
+                  aria-label="Gerar nova senha"
+                  icon={<RefreshCw className="h-4 w-4" />}
                   onClick={() =>
                     setNewUser((u) => ({ ...u, tempPassword: generatePassword() }))
                   }
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
+                />
+              </Flex>
+              <Text fontSize="xs" color="gray.500" mt="1">
                 Esta senha será enviada por e-mail ao usuário
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
+              </Text>
+            </FormControl>
+          </ModalBody>
+          <ModalFooter gap="2">
             <Button variant="outline" onClick={() => setShowNewUserDialog(false)}>
               Cancelar
             </Button>
             <Button
+              colorScheme="blue"
               onClick={handleCreateUser}
-              disabled={!newUser.name || !newUser.email}
+              isDisabled={!newUser.name || !newUser.email}
             >
               Criar Usuário
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Dialog: Editar Usuário */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription>
+      <Modal isOpen={showEditDialog} onClose={() => setShowEditDialog(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent bg="white" _dark={{ bg: "gray.800" }}>
+          <ModalHeader>
+            Editar Usuário
+            <Text fontSize="sm" color="gray.500" fontWeight="normal" mt="1">
               Atualize os dados do usuário
-            </DialogDescription>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Nome</Label>
-                <Input value={selectedUser.name} readOnly className="bg-muted" />
-              </div>
-              <div className="space-y-2">
-                <Label>E-mail</Label>
-                <Input value={selectedUser.email} readOnly className="bg-muted" />
-              </div>
-              <div className="space-y-2">
-                <Label>Perfil</Label>
+            </Text>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody className="space-y-4">
+            {selectedUser && (
+              <>
+                <FormControl>
+                  <FormLabel>Nome</FormLabel>
+                  <Input value={selectedUser.name} readOnly bg="gray.50" _dark={{ bg: "gray.700" }} />
+                </FormControl>
+                <FormControl>
+                  <FormLabel>E-mail</FormLabel>
+                  <Input value={selectedUser.email} readOnly bg="gray.50" _dark={{ bg: "gray.700" }} />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>Perfil</FormLabel>
                 <Select
                   value={selectedUser.profile}
-                  onValueChange={(v: "citizen" | "manager" | "admin") =>
-                    setSelectedUser((u) => (u ? { ...u, profile: v } : null))
+                    onChange={(e) =>
+                      setSelectedUser((u) => (u ? { ...u, profile: e.target.value as "citizen" | "manager" | "admin" } : null))
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="citizen">Cidadão</SelectItem>
-                    <SelectItem value="manager">Gestor</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                  </SelectContent>
+                    <option value="citizen">Cidadão</option>
+                    <option value="manager">Gestor</option>
+                    <option value="admin">Administrador</option>
                 </Select>
-              </div>
+                </FormControl>
 
               {selectedUser.profile !== "citizen" && (
-                <div className="space-y-2">
-                  <Label>Órgão</Label>
+                  <FormControl isRequired>
+                    <FormLabel>Órgão</FormLabel>
                   <Select
                     value={selectedUser.department || ""}
-                    onValueChange={(v) =>
-                      setSelectedUser((u) => (u ? { ...u, department: v } : null))
+                      onChange={(e) =>
+                        setSelectedUser((u) => (u ? { ...u, department: e.target.value } : null))
                     }
+                      placeholder="Selecione o órgão"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o órgão" />
-                    </SelectTrigger>
-                    <SelectContent>
                       {departments.map((d) => (
-                        <SelectItem key={d} value={d}>
-                          {d}
-                        </SelectItem>
+                        <option key={d} value={d}>{d}</option>
                       ))}
-                    </SelectContent>
                   </Select>
-                </div>
+                  </FormControl>
               )}
 
               {selectedUser.profile === "manager" && (
-                <div className="space-y-2">
-                  <Label>Setor de Atuação</Label>
+                  <FormControl isRequired>
+                    <FormLabel>Setor de Atuação</FormLabel>
                   <Select
                     value={selectedUser.sector || ""}
-                    onValueChange={(v) =>
-                      setSelectedUser((u) => (u ? { ...u, sector: v } : null))
+                      onChange={(e) =>
+                        setSelectedUser((u) => (u ? { ...u, sector: e.target.value } : null))
                     }
+                      placeholder="Selecione o setor"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o setor" />
-                    </SelectTrigger>
-                    <SelectContent>
                       {sectors.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
+                        <option key={s} value={s}>{s}</option>
                       ))}
-                    </SelectContent>
                   </Select>
-                </div>
+                  </FormControl>
               )}
 
-              <div className="space-y-2">
-                <Label>Status</Label>
+                <FormControl isRequired>
+                  <FormLabel>Status</FormLabel>
                 <Select
                   value={selectedUser.status}
-                  onValueChange={(v: "active" | "inactive") =>
-                    setSelectedUser((u) => (u ? { ...u, status: v } : null))
+                    onChange={(e) =>
+                      setSelectedUser((u) => (u ? { ...u, status: e.target.value as "active" | "inactive" } : null))
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
-                  </SelectContent>
+                    <option value="active">Ativo</option>
+                    <option value="inactive">Inativo</option>
                 </Select>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
+                </FormControl>
+              </>
+            )}
+          </ModalBody>
+          <ModalFooter gap="2">
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleEditUser}>Salvar Alterações</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button colorScheme="blue" onClick={handleEditUser}>Salvar Alterações</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }
