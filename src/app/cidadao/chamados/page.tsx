@@ -19,6 +19,7 @@ import {
   InputGroup,
   InputLeftElement,
   useMediaQuery,
+  Checkbox,
 } from '@chakra-ui/react'
 import { AddIcon, SearchIcon } from '@chakra-ui/icons'
 import Link from 'next/link'
@@ -46,14 +47,23 @@ export default function ChamadosPage() {
   const [filtroStatus, setFiltroStatus] = React.useState<StatusChamado | ''>('')
   const [filtroOrgao, setFiltroOrgao] = React.useState('todos')
   const [ordenacao, setOrdenacao] = React.useState('recentes')
+  const [somenteMeus, setSomenteMeus] = React.useState(true)
 
   React.useEffect(() => {
     fetchChamados()
   }, [fetchChamados])
 
+  // Base de chamados considerando toggle "Somente meus"
+  const baseChamados = React.useMemo(() => {
+    if (somenteMeus && usuario?.id) {
+      return chamados.filter((c) => c.cidadaoId === usuario.id)
+    }
+    return chamados
+  }, [chamados, somenteMeus, usuario])
+
   // Filtrar chamados
   const chamadosFiltrados = React.useMemo(() => {
-    let resultado = chamados
+    let resultado = baseChamados
 
     // Filtro de busca
     if (busca) {
@@ -87,16 +97,16 @@ export default function ChamadosPage() {
     }
 
     return resultado
-  }, [chamados, busca, filtroStatus, filtroOrgao, ordenacao])
+  }, [baseChamados, busca, filtroStatus, filtroOrgao, ordenacao])
 
   // Contar por status
   const contadorStatus = React.useMemo(() => {
     return {
-      aberto: chamados.filter((c) => c.status === 'Aberto').length,
-      analise: chamados.filter((c) => c.status === 'Em Análise').length,
-      andamento: chamados.filter((c) => c.status === 'Em Andamento').length,
+      aberto: baseChamados.filter((c) => c.status === 'Aberto').length,
+      analise: baseChamados.filter((c) => c.status === 'Em Análise').length,
+      andamento: baseChamados.filter((c) => c.status === 'Em Andamento').length,
     }
-  }, [chamados])
+  }, [baseChamados])
 
   return (
     <Box>
@@ -113,7 +123,7 @@ export default function ChamadosPage() {
             <HStack spacing={1}>
               <Text opacity={0.8}>{usuario?.nome}</Text>
               <Text opacity={0.6}>•</Text>
-              <Text opacity={0.6}>Total: {chamados.length} chamados</Text>
+              <Text opacity={0.6}>Total: {baseChamados.length} chamados</Text>
             </HStack>
           </VStack>
         </Container>
@@ -162,6 +172,14 @@ export default function ChamadosPage() {
 
           {/* Filtros e Ordenação */}
           <HStack spacing={3} flexWrap={{ base: 'wrap', md: 'nowrap' }}>
+            <Checkbox
+              size="sm"
+              colorScheme="primary"
+              isChecked={somenteMeus}
+              onChange={(e) => setSomenteMeus(e.target.checked)}
+            >
+              Somente meus
+            </Checkbox>
             <Select
               placeholder="Todos os órgãos"
               value={filtroOrgao}
@@ -214,11 +232,11 @@ export default function ChamadosPage() {
             >
               <TabList gap={1} flexWrap="wrap">
                 <Tab fontSize="xs" px={3}>
-                  Todos ({chamados.length})
+                  Todos ({baseChamados.length})
                 </Tab>
                 {statuses.map((status) => (
                   <Tab key={status} fontSize="xs" px={3}>
-                    {status} ({chamados.filter((c) => c.status === status).length})
+                    {status} ({baseChamados.filter((c) => c.status === status).length})
                   </Tab>
                 ))}
               </TabList>
