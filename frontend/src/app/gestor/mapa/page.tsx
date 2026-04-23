@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import {
   Box, Container, VStack, HStack, Heading, Text, Select, 
-  Card, CardBody, Badge, Spinner
+  Card, Badge, Spinner
 } from '@chakra-ui/react'
 
 // Importação dinâmica do componente de Mapa para evitar erro de SSR

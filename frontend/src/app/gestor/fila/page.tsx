@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import {
   Box, Container, VStack, HStack, Heading, Text, Select, Button, Table,
   Thead, Tbody, Tr, Th, Td, Badge, Checkbox, Card, CardBody, Input,
-  useToast, Divider
+  useToast
 } from '@chakra-ui/react'
 import Link from 'next/link'
 import { StatusBadge } from '@/components/StatusBadge'
