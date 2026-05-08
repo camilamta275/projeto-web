@@ -31,7 +31,38 @@ erDiagram
 
     ADMIN {
         string id PK "Referencia USUARIO"
+        string nivelAcesso
+        string permissaoEscopo
+        timestamp ultimoLogin
+        boolean ativo
     }
+
+    DASHBOARD_SLA {
+        string id PK
+        string adminId FK
+        int totalChamados
+        int chamadosNoPrazo
+        int chamadosAtrasados
+        float taxaCumprimentoSLA
+        float tempoMedioResolucao
+        timestamp atualizadoEm
+    }
+
+    AUDITORIA_ADMIN {
+        string id PK
+        string adminId FK
+        string acao
+        string entidadeAfetada
+        string entidadeId
+        string descricao
+        timestamp criadoEm
+    }
+
+    %% Relacionamentos administrativos
+    ADMIN ||--o{ ORGAO : "manages"
+    ADMIN ||--o{ GESTOR : "registers"
+    ADMIN ||--|| DASHBOARD_SLA : "monitors"
+    ADMIN ||--o{ AUDITORIA_ADMIN : "logs_actions"
 
     ORGAO {
         string id PK
@@ -154,6 +185,7 @@ erDiagram
     MANAGER_PROFILE ||--o{ NOTIFICATION_PREFERENCE : "has_preferences"
     
     ORGAO }o--o{ CATEGORIA : "handles"
+
 ```
 
 ---
