@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: false,
   error: null,
 
-  login: async (email: string, _senha: string) => {
+  login: async (email: string, senha: string) => {
     set({ isLoading: true, error: null })
     try {
       // Tenta o JSON Server primeiro, cai no mock se falhar
@@ -52,8 +52,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         usuario = MOCK_USUARIOS.find((u) => u.email === email) ?? null
       }
 
-      if (!usuario) {
-        throw new Error('Usuário não encontrado. Use um dos emails de teste.')
+      if (!usuario || senha !== '123456') {
+        throw new Error('E-mail ou senha incorretos')
       }
 
       set({
