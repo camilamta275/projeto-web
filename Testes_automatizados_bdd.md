@@ -55,15 +55,24 @@ npx cypress open
 
 ## 6. Executar os testes
 
-1. Escolha:
+# Executar testes pelo terminal
 
-   * E2E Testing
-   * Chrome
-   * Start E2E Testing
+```bash
+npx cypress run
+```
 
-2. Clique no arquivo de teste desejado dentro da interface do Cypress.
+# Executar um test especifico pelo terminal
+```bash
+npx cypress run --spec "cypress/e2e/login.cy.js"
+```
 
 ---
+
+# Executar testes pela interface gráfica
+
+```bash
+npx cypress open
+```
 
 # Estrutura dos testes
 
@@ -83,28 +92,4 @@ cypress/
 ```txt
 Email: joao@example.com
 Senha: 123456
-```
-
----
-
-# Observações
-
-* Os testes são executados no sistema hospedado na Vercel.
-* Alguns testes podem falhar propositalmente devido à ausência de persistência no backend.
-* O plugin Cypress XPath é utilizado para localizar elementos específicos da interface.
-
----
-
-# Executar testes pelo terminal
-
-```bash
-npx cypress run
-```
-
----
-
-# Executar testes pela interface gráfica
-
-```bash
-npx cypress open
 ```
