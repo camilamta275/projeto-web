@@ -1,13 +1,321 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
+  engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model admin {
+  id               String    @id @db.Uuid
+  nivel_acesso     String    @db.VarChar(100)
+  permissao_escopo String?   @db.VarChar(255)
+  ultimo_login     DateTime? @db.Timestamptz(6)
+  ativo            Boolean?  @default(true)
+  usuario          usuario   @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model categoria {
+  id                Int                 @id @default(autoincrement())
+  nome              String              @unique @db.VarChar(100)
+  descricao         String?
+  ativo             Boolean             @default(true)
+  criadoem          DateTime            @default(now()) @db.Timestamp(6)
+  chamado           chamado[]
+  orgao_categoria   orgao_categoria[]
+  regra_competencia regra_competencia[]
+
+  @@index([ativo], map: "idx_categoria_ativo")
+  @@index([nome], map: "idx_categoria_nome")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model chamado {
+  id                 String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  protocolo          String           @unique @db.VarChar(20)
+  descricao          String
+  cidadaoid          String           @db.Uuid
+  gestorid           String?          @db.Uuid
+  orgaoid            String           @db.VarChar(10)
+  categoriaid        Int
+  subcategoria       String           @db.VarChar(100)
+  endereco           String           @db.VarChar(255)
+  latitude           Decimal          @db.Decimal(10, 8)
+  longitude          Decimal          @db.Decimal(11, 8)
+  status             status_chamado   @default(Aberto)
+  prioridade         prioridade
+  fotourl            String?          @db.VarChar(500)
+  slahoras           Int
+  sladeadline        DateTime         @db.Timestamp(6)
+  slaencerradoha     Decimal?         @db.Decimal(8, 2)
+  slajustification   String?
+  resolutionnote     String?
+  resolutionphotourl String?          @db.VarChar(500)
+  criadoem           DateTime         @default(now()) @db.Timestamp(6)
+  atualizadoem       DateTime         @default(now()) @db.Timestamp(6)
+  categoria          categoria        @relation(fields: [categoriaid], references: [id], onUpdate: NoAction)
+  cidadao            cidadao          @relation(fields: [cidadaoid], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  gestor             gestor?          @relation(fields: [gestorid], references: [id], onUpdate: NoAction)
+  orgao              orgao            @relation(fields: [orgaoid], references: [id], onUpdate: NoAction)
+  notificacao        notificacao[]
+  timeline_event     timeline_event[]
+
+  @@index([categoriaid], map: "idx_chamado_categoria")
+  @@index([cidadaoid, criadoem(sort: Desc)], map: "idx_chamado_cidadao")
+  @@index([criadoem(sort: Desc)], map: "idx_chamado_criadoem")
+  @@index([gestorid, status, criadoem(sort: Desc)], map: "idx_chamado_gestor", where: raw("(gestorid IS NOT NULL)"))
+  @@index([gestorid, status, criadoem(sort: Desc)], map: "idx_chamado_gestor_status_recentes")
+  @@index([orgaoid, status, criadoem(sort: Desc)], map: "idx_chamado_orgao")
+  @@index([orgaoid, sladeadline, status], map: "idx_chamado_orgao_sla_vencido")
+  @@index([prioridade], map: "idx_chamado_prioridade")
+  @@index([protocolo], map: "idx_chamado_protocolo")
+  @@index([sladeadline, status], map: "idx_chamado_sla", where: raw("(status = ANY (ARRAY['Aberto'::status_chamado, 'Em Análise'::status_chamado, 'Em Andamento'::status_chamado, 'Aguardando'::status_chamado]))"))
+  @@index([status, criadoem(sort: Desc)], map: "idx_chamado_status")
+  @@index([orgaoid, criadoem(sort: Desc), status], map: "idx_dashboard_orgao")
+  @@index([gestorid, status, criadoem(sort: Desc)], map: "idx_fila_gestor", where: raw("((gestorid IS NOT NULL) AND (status = ANY (ARRAY['Aberto'::status_chamado, 'Em Análise'::status_chamado])))"))
+  @@index([orgaoid, status, atualizadoem(sort: Desc)], map: "idx_relatorio_resolucao", where: raw("(status = ANY (ARRAY['Resolvido'::status_chamado, 'Fechado'::status_chamado]))"))
+  @@index([orgaoid, sladeadline], map: "idx_sla_vencido", where: raw("(status <> ALL (ARRAY['Resolvido'::status_chamado, 'Fechado'::status_chamado]))"))
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cidadao {
+  id       String    @id @db.Uuid
+  cpf      String?   @unique @db.VarChar(11)
+  endereco String?   @db.VarChar(255)
+  chamado  chamado[]
+  usuario  usuario   @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([cpf], map: "idx_cidadao_cpf", where: raw("(cpf IS NOT NULL)"))
+}
+
+model gestor {
+  id              String           @id @db.Uuid
+  orgaoid         String           @db.VarChar(10)
+  departamento    String?          @db.VarChar(100)
+  telefone        String?          @db.VarChar(20)
+  chamado         chamado[]
+  usuario         usuario          @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orgao           orgao            @relation(fields: [orgaoid], references: [id], onUpdate: NoAction)
+  manager_profile manager_profile?
+
+  @@index([orgaoid], map: "idx_gestor_orgao")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model manager_profile {
+  id                      String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  usuarioid               String                    @unique @db.Uuid
+  displayname             String                    @db.VarChar(150)
+  initials                String                    @db.VarChar(4)
+  avatarurl               String?                   @db.VarChar(500)
+  departamento            String?                   @db.VarChar(100)
+  managedtickets          Int                       @default(0)
+  avgresolutionhours      Decimal                   @default(0) @db.Decimal(8, 2)
+  slacompliancepct        Decimal                   @default(0) @db.Decimal(5, 2)
+  criadoem                DateTime                  @default(now()) @db.Timestamp(6)
+  atualizadoem            DateTime                  @default(now()) @db.Timestamp(6)
+  gestor                  gestor                    @relation(fields: [usuarioid], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  notification_preference notification_preference[]
+
+  @@index([slacompliancepct(sort: Desc)], map: "idx_manager_profile_sla")
+  @@index([usuarioid], map: "idx_manager_profile_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notificacao {
+  id        String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  usuarioid String           @db.Uuid
+  titulo    String           @db.VarChar(200)
+  mensagem  String
+  tipo      tipo_notificacao
+  chamadoid String?          @db.Uuid
+  lida      Boolean          @default(false)
+  criadoem  DateTime         @default(now()) @db.Timestamp(6)
+  lida_em   DateTime?        @db.Timestamp(6)
+  chamado   chamado?         @relation(fields: [chamadoid], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuario   usuario          @relation(fields: [usuarioid], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuarioid, lida, criadoem(sort: Desc)], map: "idx_notif_nao_lida", where: raw("(lida = false)"))
+  @@index([chamadoid], map: "idx_notificacao_chamado", where: raw("(chamadoid IS NOT NULL)"))
+  @@index([criadoem(sort: Desc)], map: "idx_notificacao_criadoem")
+  @@index([lida], map: "idx_notificacao_lida")
+  @@index([usuarioid], map: "idx_notificacao_usuario")
+  @@index([usuarioid, lida, criadoem(sort: Desc)], map: "idx_notificacao_usuario_lida")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notification_preference {
+  id               String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  managerprofileid String          @db.Uuid
+  label            String          @db.VarChar(100)
+  email            Boolean         @default(true)
+  sistema          Boolean         @default(true)
+  criadoem         DateTime        @default(now()) @db.Timestamp(6)
+  manager_profile  manager_profile @relation(fields: [managerprofileid], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([managerprofileid], map: "idx_notif_pref_manager")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model orgao {
+  id                                                           String              @id @db.VarChar(10)
+  nome                                                         String              @unique @db.VarChar(200)
+  sigla                                                        String              @unique @db.VarChar(10)
+  tipo                                                         tipo_orgao
+  slahoras                                                     Int
+  responsavel                                                  String?             @db.VarChar(150)
+  email                                                        String              @db.VarChar(100)
+  telefone                                                     String?             @db.VarChar(20)
+  status                                                       status_enum         @default(Ativo)
+  criadoem                                                     DateTime            @default(now()) @db.Timestamp(6)
+  atualizadoem                                                 DateTime            @default(now()) @db.Timestamp(6)
+  chamado                                                      chamado[]
+  gestor                                                       gestor[]
+  orgao_categoria                                              orgao_categoria[]
+  regra_competencia_regra_competencia_orgaoprincipalidToorgao  regra_competencia[] @relation("regra_competencia_orgaoprincipalidToorgao")
+  regra_competencia_regra_competencia_orgaosecundarioidToorgao regra_competencia[] @relation("regra_competencia_orgaosecundarioidToorgao")
+
+  @@index([sigla], map: "idx_orgao_sigla")
+  @@index([status], map: "idx_orgao_status")
+  @@index([tipo], map: "idx_orgao_tipo")
+}
+
+model orgao_categoria {
+  orgaoid     String    @db.VarChar(10)
+  categoriaid Int
+  categoria   categoria @relation(fields: [categoriaid], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orgao       orgao     @relation(fields: [orgaoid], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([orgaoid, categoriaid])
+  @@index([categoriaid], map: "idx_orgao_categoria_categoria")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model regra_competencia {
+  id                                               String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  categoriaid                                      Int
+  subcategoria                                     String     @db.VarChar(100)
+  orgaoprincipalid                                 String     @db.VarChar(10)
+  orgaosecundarioid                                String?    @db.VarChar(10)
+  slahoras                                         Int
+  prioridade                                       prioridade @default(M_dia)
+  criadoem                                         DateTime   @default(now()) @db.Timestamp(6)
+  categoria                                        categoria  @relation(fields: [categoriaid], references: [id], onUpdate: NoAction)
+  orgao_regra_competencia_orgaoprincipalidToorgao  orgao      @relation("regra_competencia_orgaoprincipalidToorgao", fields: [orgaoprincipalid], references: [id], onUpdate: NoAction)
+  orgao_regra_competencia_orgaosecundarioidToorgao orgao?     @relation("regra_competencia_orgaosecundarioidToorgao", fields: [orgaosecundarioid], references: [id], onUpdate: NoAction)
+
+  @@unique([categoriaid, subcategoria], map: "categoria_subcategoria_unica")
+  @@index([categoriaid], map: "idx_regra_categoria")
+  @@index([categoriaid, subcategoria], map: "idx_regra_categoria_sub")
+  @@index([orgaoprincipalid], map: "idx_regra_orgao_principal")
+  @@index([orgaosecundarioid], map: "idx_regra_orgao_secundario", where: raw("(orgaosecundarioid IS NOT NULL)"))
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model timeline_event {
+  id           String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  chamadoid    String        @db.Uuid
+  tipo         tipo_timeline
+  titulo       String?       @db.VarChar(200)
+  descricao    String
+  autor        String        @db.VarChar(150)
+  timestamp    DateTime      @default(now()) @db.Timestamp(6)
+  dadosantigos Json?
+  dadosnovos   Json?
+  chamado      chamado       @relation(fields: [chamadoid], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([chamadoid], map: "idx_timeline_chamado")
+  @@index([chamadoid, timestamp(sort: Desc)], map: "idx_timeline_chamado_desc")
+  @@index([timestamp(sort: Desc)], map: "idx_timeline_timestamp")
+  @@index([tipo], map: "idx_timeline_tipo")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model usuario {
+  id            String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nome          String          @db.VarChar(150)
+  email         String          @unique @db.VarChar(100)
+  senha         String          @db.VarChar(255)
+  perfil        perfil
+  status        status_enum     @default(Ativo)
+  criadoem      DateTime        @default(now()) @db.Timestamp(6)
+  atualizadoem  DateTime        @default(now()) @db.Timestamp(6)
+  atualizadopor String?         @db.Uuid
+  admin         admin?
+  cidadao       cidadao?
+  gestor        gestor?
+  notificacao   notificacao[]
+  usuario_audit usuario_audit[]
+
+  @@index([criadoem(sort: Desc)], map: "idx_usuario_criadoem")
+  @@index([email], map: "idx_usuario_email")
+  @@index([perfil], map: "idx_usuario_perfil")
+  @@index([status], map: "idx_usuario_status")
+}
+
+model usuario_audit {
+  id           Int      @id @default(autoincrement())
+  usuarioid    String   @db.Uuid
+  acao         String   @db.VarChar(50)
+  dadosantigos Json?
+  dadosnovos   Json?
+  timestamp    DateTime @default(now()) @db.Timestamp(6)
+  usuario      usuario  @relation(fields: [usuarioid], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum perfil {
+  Cidad_o @map("Cidadão")
+  Gestor
+  Admin
+}
+
+enum prioridade {
+  Baixa
+  M_dia   @map("Média")
+  Alta
+  Cr_tica @map("Crítica")
+}
+
+enum status_chamado {
+  Aberto
+  Em_An_lise   @map("Em Análise")
+  Em_Andamento @map("Em Andamento")
+  Aguardando
+  Resolvido
+  Fechado
+}
+
+enum status_enum {
+  Ativo
+  Inativo
+}
+
+enum tipo_notificacao {
+  chamado
+  status
+  equipe
+  concluido
+  chamado_registrado @map("chamado-registrado")
+  status_atualizado  @map("status-atualizado")
+  equipe_designada   @map("equipe-designada")
+  chamado_concluido  @map("chamado-concluido")
+}
+
+enum tipo_orgao {
+  Municipal
+  Estadual
+  Federal
+  Concession_ria @map("Concessionária")
+}
+
+enum tipo_timeline {
+  criacao
+  status
+  mensagem
+  transferencia
+  conclusao
 }
