@@ -1,10 +1,11 @@
+import 'dotenv/config';
 import { PrismaClient, perfil } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:BacoExu @localhost:5050/fiscalize?schema=public';
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:BacoExu@localhost:5432/fiscalize?schema=public';
 
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
@@ -46,8 +47,8 @@ export const authService = {
 
     const token = jwt.sign({ usuarioId: usuario.id, perfil: usuario.perfil }, JWT_SECRET, {
       expiresIn: '1d',
-    });
+        });
 
-    return { usuario, token };
+        return { usuario, token };
   },
 };
