@@ -206,7 +206,11 @@ CREATE INDEX idx_gestor_orgao ON gestor(orgaoId);
 
 ```sql
 CREATE TABLE admin (
-    id UUID PRIMARY KEY REFERENCES usuario(id) ON DELETE CASCADE
+    id UUID PRIMARY KEY REFERENCES usuario(id) ON DELETE CASCADE,
+    nivel_acesso VARCHAR(100) NOT NULL,
+    permissao_escopo VARCHAR(255),
+    ultimo_login TIMESTAMP WITH TIME ZONE,
+    ativo BOOLEAN DEFAULT TRUE
     
     -- CONSTRAINT: usuario.perfil = 'Admin' (via trigger)
 );
