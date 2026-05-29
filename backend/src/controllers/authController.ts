@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { authService } from '../services/authService';
+import { AuthRequest } from '../middlewares/authMiddleware';
 
 export const authController = {
   async register(req: Request, res: Response) {
@@ -36,5 +37,10 @@ export const authController = {
   async logout(req: Request, res: Response) {
     res.clearCookie('token');
     res.status(200).json({ message: 'Logout realizado com sucesso' });
+  },
+
+  async me(req: AuthRequest, res: Response) {
+    res.status(200).json({ user: req.user });
   }
+  
 };
