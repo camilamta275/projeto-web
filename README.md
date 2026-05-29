@@ -47,165 +47,41 @@ Acesse [http://localhost:3000](http://localhost:3000)
 ## 📁 Estrutura do Projeto
 
 ```
-projeto-web/
-├── backend/                          # API Node.js + Express + Prisma
-│   ├── prisma/
-│   │   └── schema.prisma            # Modelo de dados (Prisma)
-│   ├── src/
-│   │   ├── controllers/             # Controladores HTTP
-│   │   │   └── authController.ts
-│   │   ├── middlewares/             # Middlewares Express
-│   │   │   └── authMiddleware.ts
-│   │   ├── routes/                  # Definição de rotas
-│   │   │   └── authRoutes.ts
-│   │   ├── services/                # Regras de negócio
-│   │   │   └── authService.ts
-│   │   └── server.ts                # Entry point do servidor
-│   ├── .env.example
-│   ├── COMO_RODAR_O_BACK.md
-│   ├── package.json
-│   ├── prisma.config.ts
-│   └── tsconfig.json
-│
-├── frontend/                         # Aplicação Next.js 14 (App Router)
-│   ├── src/
-│   │   ├── app/                     # Rotas Next.js (App Router)
-│   │   │   ├── admin/               # Painel administrativo
-│   │   │   │   ├── competencias/
-│   │   │   │   ├── dashboard/
-│   │   │   │   ├── matriz/
-│   │   │   │   ├── orgaos/
-│   │   │   │   └── usuarios/
-│   │   │   ├── api/                 # API routes (Next.js)
-│   │   │   │   ├── analytics/
-│   │   │   │   ├── auth/
-│   │   │   │   ├── notifications/
-│   │   │   │   ├── tickets/
-│   │   │   │   └── users/
-│   │   │   ├── cidadao/             # Área do cidadão
-│   │   │   │   ├── chamados/
-│   │   │   │   └── notificacoes/
-│   │   │   ├── dashboard/
-│   │   │   ├── gestor/              # Área do gestor
-│   │   │   │   ├── chamados/
-│   │   │   │   ├── dashboard/
-│   │   │   │   ├── fila/
-│   │   │   │   ├── mapa/
-│   │   │   │   ├── perfil/
-│   │   │   │   └── relatorios/
-│   │   │   ├── login/
-│   │   │   ├── globals.css
-│   │   │   ├── layout.tsx
-│   │   │   └── page.tsx
-│   │   ├── components/              # Componentes React reutilizáveis
-│   │   │   ├── chamados/            # Componentes de chamados
-│   │   │   │   ├── ChamadoCard.tsx
-│   │   │   │   ├── ChamadoCardV2.tsx
-│   │   │   │   ├── FiltroBar.tsx
-│   │   │   │   ├── KPICard.tsx
-│   │   │   │   ├── StatusBadge.tsx
-│   │   │   │   ├── TicketTimeline.tsx
-│   │   │   │   └── Timeline.tsx
-│   │   │   ├── layout/              # Componentes de layout
-│   │   │   │   ├── BottomNav.tsx
-│   │   │   │   ├── Header.tsx
-│   │   │   │   └── Sidebar.tsx
-│   │   │   ├── CategoriaGrid.tsx
-│   │   │   ├── ChamadoCard.tsx
-│   │   │   ├── CreateTicketForm.tsx
-│   │   │   ├── FilaChamadoRow.tsx
-│   │   │   ├── Header.tsx
-│   │   │   ├── HeaderCidadao.tsx
-│   │   │   ├── Heatmap.tsx
-│   │   │   ├── KPICard.tsx
-│   │   │   ├── LoginForm.tsx
-│   │   │   ├── MainLayout.tsx
-│   │   │   ├── NotificationBell.tsx
-│   │   │   ├── PriorityBadge.tsx
-│   │   │   ├── ProtectedRoute.tsx
-│   │   │   ├── Providers.tsx
-│   │   │   ├── Sidebar.tsx
-│   │   │   ├── SLABar.tsx
-│   │   │   ├── StatusBadge.tsx
-│   │   │   ├── TicketCard.tsx
-│   │   │   └── TimelineEvent.tsx
-│   │   ├── hooks/                   # Hooks customizados
-│   │   │   ├── useApi.ts
-│   │   │   ├── useForm.ts
-│   │   │   └── useMSW.ts
-│   │   ├── lib/                     # Utilitários, tema e validações
-│   │   │   ├── mock-data.ts
-│   │   │   ├── theme.ts
-│   │   │   └── validations.ts
-│   │   ├── mocks/                   # MSW (Mock Service Worker)
-│   │   │   ├── browser.ts
-│   │   │   ├── db.json
-│   │   │   ├── handlers.ts
-│   │   │   └── server.ts
-│   │   ├── stores/                  # Stores Zustand
-│   │   │   ├── authStore.ts
-│   │   │   ├── chamadosStore.ts
-│   │   │   ├── gestorStore.ts
-│   │   │   ├── managerProfileStore.ts
-│   │   │   ├── notificacoesStore.ts
-│   │   │   ├── notificationStore.ts
-│   │   │   └── ticketStore.ts
-│   │   ├── tests/                   # Testes (Jest + Testing Library)
-│   │   │   ├── acceptance/
-│   │   │   │   ├── cidadao-dashboard.test.tsx
-│   │   │   │   ├── dashboard-page.test.tsx
-│   │   │   │   ├── login-page.test.tsx
-│   │   │   │   └── smoke.test.tsx
-│   │   │   └── setup/
-│   │   │       └── jestMocks.ts
-│   │   ├── types/                   # Tipos TypeScript
-│   │   │   ├── chamado.ts
-│   │   │   ├── enums.ts
-│   │   │   ├── index.ts
-│   │   │   ├── leaflet-heat.d.ts
-│   │   │   ├── notificacao.ts
-│   │   │   ├── orgao.ts
-│   │   │   ├── user.ts
-│   │   │   └── usuario.ts
-│   │   └── utils/                   # Funções utilitárias
-│   │       ├── constants.ts
-│   │       ├── dateFormatter.ts
-│   │       └── masks.ts
-│   ├── public/                      # Arquivos estáticos
-│   ├── docker-compose.yml
-│   ├── Dockerfile
-│   ├── jest.config.ts
-│   ├── jest.setup.ts
-│   ├── middleware.ts
-│   ├── next.config.mjs
-│   ├── package.json
-│   ├── postcss.config.js
-│   ├── tailwind.config.ts
-│   └── tsconfig.json
-│
-├── cypress/                          # Testes E2E (Cypress)
-│   ├── e2e/
-│   │   ├── login.cy.js
-│   │   └── open_chamado.cy.js
-│   ├── fixtures/
-│   │   └── example.json
-│   ├── screenshots/
-│   └── support/
-│       ├── commands.ts
-│       └── e2e.ts
-│
-├── 1_ANALISE_BD_RELACIONAL_VS_NOSQL.md
-├── 2_MODELO_CONCEITUAL.md
-├── 3_MODELO_LOGICO_ER_DIAGRAM.md
-├── 4_MODELO_FISICO_DDL_SQL.md
-├── ANALISE_PLANO_DE_TESTES.md
-├── COMO_RODAR_TESTES_AUTOMATIZADOS.md
-├── Requisitos Gerais do Projeto.md
-├── RESPOSTAS_REQUISITOS_GERAIS.md
-├── cypress.config.ts
-├── package.json
-├── README.md
-└── tsconfig.json
+src/
+├── app/                    # Páginas e rotas do Next.js (App Router)
+│   ├── api/               # Rotas da API
+│   ├── dashboard/         # Página de dashboard
+│   ├── tickets/           # Gerenciamento de tickets
+│   ├── login/             # Página de login
+│   ├── profile/           # Perfil do usuário
+│   ├── admin/             # Painel administrativo
+│   ├── management/        # Painel de gerenciamento
+│   └── reports/           # Relatórios e análises
+├── components/            # Componentes React reutilizáveis
+│   ├── Header.tsx
+│   ├── Sidebar.tsx
+│   ├── LoginForm.tsx
+│   ├── TicketCard.tsx
+│   ├── KPICard.tsx
+│   └── Providers.tsx
+├── stores/                # Stores Zustand para state management
+│   ├── authStore.ts
+│   ├── ticketStore.ts
+│   └── notificationStore.ts
+├── hooks/                 # Hooks customizados
+│   ├── useApi.ts
+│   ├── useForm.ts
+│   └── index.ts
+├── types/                 # Definições de tipos TypeScript
+│   └── index.ts
+├── lib/                   # Utilitários e validações
+│   └── validations.ts
+├── utils/                 # Funções utilitárias
+│   ├── constants.ts
+│   └── dateFormatter.ts
+└── mocks/                 # Mocks com MSW
+    ├── handlers.ts
+    └── server.ts
 ```
 
 ## 🔐 Autenticação
