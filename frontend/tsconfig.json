@@ -2,51 +2,68 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
+
     "lib": [
       "ES2020",
       "DOM",
       "DOM.Iterable"
     ],
+
     "module": "ESNext",
-    "skipLibCheck": true,
-    /* Bundler mode */
     "moduleResolution": "bundler",
+
+    "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+
     "jsx": "preserve",
-    /* Linting */
+
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    /* Path aliases */
-    "baseUrl": "./",
+
+    "types": [
+      "jest",
+      "node",
+      "@testing-library/jest-dom"
+    ],
+
+    "ignoreDeprecations": "6.0",
+
+    "baseUrl": ".",
+
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
+
     "allowJs": true,
     "incremental": true,
+
     "plugins": [
       {
         "name": "next"
       }
     ]
   },
+
   "include": [
-    "src",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts"
   ],
+
   "references": [
     {
       "path": "./tsconfig.node.json"
     }
   ],
+
   "exclude": [
     "node_modules"
   ]
