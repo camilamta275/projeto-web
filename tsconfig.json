@@ -3,7 +3,7 @@
     "target": "es2018",
     "module": "commonjs",
     "lib": ["es2018", "dom"],
-    "types": ["cypress", "node"],
+    "types": ["cypress","jest", "node"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
