@@ -81,3 +81,5 @@ build_output.txt
 cypress/screenshots/
 cypress/videos/
 cypress/downloads/
+
+*package-lock.json
