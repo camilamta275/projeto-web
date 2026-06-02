@@ -76,3 +76,10 @@ build_output.txt
 *.tmp
 *.bak
 *.orig
+
+# Cypress (artefatos de execução)
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+
+*package-lock.json
