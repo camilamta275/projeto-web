@@ -1,20 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../middlewares/errorMiddleware';
-import { PrismaClient } from '@prisma/client';
+// 1. Puxe do pacote @prisma/client APENAS os tipos ou enums (como o status_chamado)
+import { status_chamado } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
-// Estender tipagem de Request para incluir user
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    perfil: string;
-  };
-}
+// 2. Importe a instância do Prisma que já está pronta no seu arquivo de config
+// Atenção às chaves { prisma }, pois você usou "export const prisma" no arquivo!
+import { prisma } from '../config/prisma';
 
 export const gestorController = {
   // GET /gestor/dashboard - Estatísticas do gestor
-  async dashboard(req: AuthRequest, res: Response, next: NextFunction) {
+  async dashboard(req: Request, res: Response, next: NextFunction) {
     try {
       const gestorId = req.user?.id;
 
@@ -61,14 +56,14 @@ export const gestorController = {
       const chamadosEmProgresso = await prisma.chamado.count({
         where: {
           gestorid: gestorId,
-          status: 'Em andamento',
+          status: 'Em_Andamento',
         },
       });
 
       const chamadosEncerrados = await prisma.chamado.count({
         where: {
           gestorid: gestorId,
-          status: 'Encerrado',
+          status: { in: ['Resolvido', 'Fechado'] },
         },
       });
 
@@ -93,7 +88,7 @@ export const gestorController = {
   },
 
   // GET /gestor/chamados - Lista de chamados do gestor
-  async listarChamados(req: AuthRequest, res: Response, next: NextFunction) {
+  async listarChamados(req: Request, res: Response, next: NextFunction) {
     try {
       const gestorId = req.user?.id;
 
@@ -106,7 +101,7 @@ export const gestorController = {
       let whereClause: any = { gestorid: gestorId };
 
       if (status && status !== 'Todos') {
-        whereClause.status = String(status);
+        whereClause.status = status as status_chamado;
       }
 
       const chamados = await prisma.chamado.findMany({
@@ -140,10 +135,10 @@ export const gestorController = {
   },
 
   // GET /gestor/chamados/:id - Detalhes de um chamado
-  async detalharChamado(req: AuthRequest, res: Response, next: NextFunction) {
+  async detalharChamado(req: Request, res: Response, next: NextFunction) {
     try {
       const gestorId = req.user?.id;
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       if (!gestorId) {
         throw new AppError(401, 'Usuário não autenticado.');
@@ -186,10 +181,10 @@ export const gestorController = {
   },
 
   // PUT /gestor/chamados/:id/status - Atualizar status de um chamado
-  async atualizarStatusChamado(req: AuthRequest, res: Response, next: NextFunction) {
+  async atualizarStatusChamado(req: Request, res: Response, next: NextFunction) {
     try {
       const gestorId = req.user?.id;
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { status } = req.body;
 
       if (!gestorId) {
@@ -200,7 +195,7 @@ export const gestorController = {
         throw new AppError(400, 'Status é obrigatório.');
       }
 
-      const statusValidos = ['Aberto', 'Em andamento', 'Encerrado'];
+      const statusValidos = ['Aberto', 'Em_An_lise', 'Em_Andamento', 'Aguardando', 'Resolvido', 'Fechado'];
       if (!statusValidos.includes(status)) {
         throw new AppError(400, `Status inválido. Deve ser um de: ${statusValidos.join(', ')}`);
       }
@@ -224,7 +219,7 @@ export const gestorController = {
 
       const chamadoAtualizado = await prisma.chamado.update({
         where: { id },
-        data: { status },
+        data: { status: status as status_chamado },
         select: {
           id: true,
           protocolo: true,

@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../src/config/prisma';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-
-const prisma = new PrismaClient();
 
 async function seed() {
   console.log('🌱 Iniciando seed do banco de dados...\n');

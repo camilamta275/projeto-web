@@ -1,16 +1,11 @@
 import 'dotenv/config';
-import { PrismaClient, perfil } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { perfil } from '@prisma/client'; // Removemos o PrismaClient daqui
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { AppError } from '../middlewares/errorMiddleware';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:BacoExu@localhost:5432/fiscalize?schema=public';
-
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+// 1. Importa a instância centralizada!
+import { prisma } from '../config/prisma'; 
 
 const JWT_SECRET: string = process.env.JWT_SECRET || 'chave_secreta_super_segura';
 const JWT_EXPIRATION: string = process.env.JWT_EXPIRATION || '24h';
