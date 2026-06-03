@@ -5,13 +5,19 @@ import { authService } from '../services/authService';
 const JWT_SECRET = process.env.JWT_SECRET || 'chave_secreta_super_segura';
 
 // Estendendo o Request do Express para incluir o payload do usuário
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    perfil: string;
-  };
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        perfil: string;
+      };
+    }
+  }
 }
+
+export type AuthRequest = Request;
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

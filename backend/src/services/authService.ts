@@ -4,6 +4,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
+import { AppError } from '../middlewares/errorMiddleware';
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:BacoExu@localhost:5432/fiscalize?schema=public';
 
@@ -21,7 +22,7 @@ export const authService = {
   async register(nome: string, email: string, senha: string) {
     const usuarioExistente = await prisma.usuario.findUnique({ where: { email } });
     if (usuarioExistente) {
-      throw new Error('E-mail já cadastrado.');
+      throw new AppError(409, 'E-mail já cadastrado.');
     }
 
     const hashedPassword = await bcrypt.hash(senha, 10);
@@ -41,17 +42,17 @@ export const authService = {
   async login(email: string, senha: string) {
     const usuario = await prisma.usuario.findUnique({ where: { email } });
     if (!usuario) {
-      throw new Error('Credenciais inválidas.');
+      throw new AppError(401, 'Credenciais inválidas.');
     }
 
     // Verifica se o usuário está ativo
     if (usuario.status !== 'Ativo') {
-      throw new Error('Credenciais inválidas.');
+      throw new AppError(401, 'Credenciais inválidas.');
     }
 
     const isValidPassword = await bcrypt.compare(senha, usuario.senha);
     if (!isValidPassword) {
-      throw new Error('Credenciais inválidas.');
+      throw new AppError(401, 'Credenciais inválidas.');
     }
 
     const token = jwt.sign(
@@ -78,7 +79,7 @@ export const authService = {
     });
 
     if (!usuario) {
-      throw new Error('Usuário não encontrado.');
+      throw new AppError(404, 'Usuário não encontrado.');
     }
 
     return usuario;

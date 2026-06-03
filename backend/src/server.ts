@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes';
+import { errorHandler } from './middlewares/errorMiddleware';
 import 'dotenv/config';
 
 const app = express();
@@ -17,6 +18,9 @@ app.use(cookieParser()); // ESSENCIAL PARA LER OS COOKIES DO JWT!
 
 // Rotas
 app.use('/auth', authRoutes);
+
+// Middleware de tratamento de erros (DEVE SER O ÚLTIMO)
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
