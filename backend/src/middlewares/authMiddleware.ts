@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { TokenExpiredError, JsonWebTokenError } from 'jsonwebtoken';
 import { authService } from '../services/authService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'chave_secreta_super_segura';
@@ -15,27 +15,45 @@ export interface AuthRequest extends Request {
 
 export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Busca o token nos cookies
-    const token = req.cookies.token;
+    // 1. Tenta ler token do cookie (prioridade)
+    let token = req.cookies.token;
 
+    // 2. Se não encontrar no cookie, tenta header Authorization: Bearer <token>
+    if (!token && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7); // Remove "Bearer " do início
+      }
+    }
+
+    // 3. Se ainda não tem token, retorna erro
     if (!token) {
-      return res.status(401).json({ error: 'Acesso negado. Autenticação necessária.' });
+      return res.status(401).json({ error: 'Acesso negado. Token não fornecido.' });
     }
 
-    // Verifica se o token está na blocklist
+    // 4. Verifica se o token está na blocklist (logout)
     if (authService.isTokenBlocked(token)) {
-      return res.status(401).json({ error: 'Token inválido ou expirado.' });
+      return res.status(401).json({ error: 'Token foi revogado (logout realizado).' });
     }
 
-    // Verifica a validade do token
+    // 5. Verifica a validade do token
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string; perfil: string };
     
-    // Anexa as informações decodificadas no request
+    // 6. Anexa as informações decodificadas no request
     req.user = decoded;
     
-    // Segue para o próximo controller
+    // 7. Segue para o próximo middleware/controller
     next();
   } catch (error) {
-    return res.status(403).json({ error: 'Token inválido ou expirado.' });
+    // Diferencia tipo de erro
+    if (error instanceof TokenExpiredError) {
+      return res.status(401).json({ error: 'Token expirado. Faça login novamente.' });
+    }
+    
+    if (error instanceof JsonWebTokenError) {
+      return res.status(401).json({ error: 'Token inválido.' });
+    }
+    
+    return res.status(401).json({ error: 'Erro na autenticação.' });
   }
 };
