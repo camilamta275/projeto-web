@@ -67,13 +67,45 @@ export const authController = {
     }
   },
 
-  async logout(req: Request, res: Response) {
-    res.clearCookie('token');
-    res.status(200).json({ message: 'Logout realizado com sucesso' });
+  async logout(req: AuthRequest, res: Response) {
+    try {
+      const token = req.cookies.token;
+      
+      // Remove o cookie
+      res.clearCookie('token');
+      
+      // Adiciona token à blocklist
+      await authService.addTokenToBlocklist(token);
+      
+      res.status(200).json({ message: 'Logout realizado com sucesso' });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Erro ao fazer logout' });
+    }
   },
 
   async me(req: AuthRequest, res: Response) {
-    res.status(200).json({ user: req.user });
+    try {
+      // Obtém o ID do usuário autenticado do token
+      const usuarioId = req.user?.id;
+
+      if (!usuarioId) {
+        return res.status(401).json({ error: 'Usuário não identificado.' });
+      }
+
+      // Busca os dados completos do usuário do banco
+      const usuario = await authService.getUserById(usuarioId);
+
+      res.status(200).json({ 
+        id: usuario.id, 
+        nome: usuario.nome, 
+        email: usuario.email, 
+        perfil: usuario.perfil,
+        status: usuario.status,
+        criadoem: usuario.criadoem 
+      });
+    } catch (error: any) {
+      res.status(404).json({ error: error.message });
+    }
   }
   
 };

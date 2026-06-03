@@ -14,6 +14,9 @@ const prisma = new PrismaClient({ adapter });
 const JWT_SECRET: string = process.env.JWT_SECRET || 'chave_secreta_super_segura';
 const JWT_EXPIRATION: string = process.env.JWT_EXPIRATION || '24h';
 
+// Blocklist em memória (em produção, usar Redis)
+const tokenBlocklist = new Set<string>();
+
 export const authService = {
   async register(nome: string, email: string, senha: string) {
     const usuarioExistente = await prisma.usuario.findUnique({ where: { email } });
@@ -58,5 +61,48 @@ export const authService = {
     );
 
     return { usuario, token };
+  },
+
+  async getUserById(userId: string) {
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        perfil: true,
+        status: true,
+        criadoem: true,
+        // Explicitamente NÃO incluindo 'senha'
+      },
+    });
+
+    if (!usuario) {
+      throw new Error('Usuário não encontrado.');
+    }
+
+    return usuario;
+  },
+
+  async addTokenToBlocklist(token: string) {
+    try {
+      // Decodifica o token para obter a expiração
+      const decoded = jwt.decode(token) as any;
+      if (decoded && decoded.exp) {
+        // Calcula TTL (tempo em segundos até expiração)
+        const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+        if (ttl > 0) {
+          tokenBlocklist.add(token);
+          // Limpa a blocklist após expiração do token
+          setTimeout(() => tokenBlocklist.delete(token), ttl * 1000);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar token à blocklist:', error);
+    }
+  },
+
+  isTokenBlocked(token: string): boolean {
+    return tokenBlocklist.has(token);
   },
 };
