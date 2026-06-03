@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes';
+import gestorRoutes from './routes/gestorRoutes';
 import { errorHandler } from './middlewares/errorMiddleware';
 import 'dotenv/config';
 
@@ -18,6 +19,7 @@ app.use(cookieParser()); // ESSENCIAL PARA LER OS COOKIES DO JWT!
 
 // Rotas
 app.use('/auth', authRoutes);
+app.use('/gestor', gestorRoutes);
 
 // Middleware de tratamento de erros (DEVE SER O ÚLTIMO)
 app.use(errorHandler);
