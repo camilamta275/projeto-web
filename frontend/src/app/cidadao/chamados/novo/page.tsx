@@ -36,6 +36,15 @@ interface Categoria {
   descricao: string | null
 }
 
+const EMOJI_MAP: Record<string, string> = {
+  'Infraestrutura': '🛣️',
+  'Água e Esgoto': '💧',
+  'Iluminação Pública': '💡',
+  'Saneamento Básico': '🗑️',
+  'Sinalização': '🚦',
+  'Outros Problemas': '📌',
+}
+
 export default function NovoChamadoPage() {
   const router = useRouter()
   const toast = useToast()
@@ -160,10 +169,13 @@ export default function NovoChamadoPage() {
                     transition="all 0.15s"
                   >
                     <CardBody py={4} px={4}>
-                      <VStack align="start" spacing={0}>
-                        <Text fontWeight="semibold" fontSize="sm">{cat.nome}</Text>
-                        <Text fontSize="xs" color="gray.500">{cat.descricao}</Text>
-                      </VStack>
+                      <HStack spacing={3}>
+                        <Text fontSize="2xl">{EMOJI_MAP[cat.nome] ?? '📌'}</Text>
+                        <VStack align="start" spacing={0}>
+                          <Text fontWeight="semibold" fontSize="sm">{cat.nome}</Text>
+                          <Text fontSize="xs" color="gray.500">{cat.descricao}</Text>
+                        </VStack>
+                      </HStack>
                     </CardBody>
                   </Card>
                 ))}
@@ -176,7 +188,7 @@ export default function NovoChamadoPage() {
         {step === 1 && (
           <VStack spacing={5} align="stretch">
             <Badge colorScheme="blue" alignSelf="start" px={3} py={1} borderRadius="full" fontSize="sm">
-              {categoria?.nome}
+              {EMOJI_MAP[categoria?.nome ?? ''] ?? '📌'} {categoria?.nome}
             </Badge>
 
             <FormControl isInvalid={!!erros.descricao}>
@@ -244,7 +256,7 @@ export default function NovoChamadoPage() {
                     Categoria:
                   </Text>
                   <Badge colorScheme="blue" px={2} py={0.5}>
-                    {categoria?.nome}
+                    {EMOJI_MAP[categoria?.nome ?? ''] ?? '📌'} {categoria?.nome}
                   </Badge>
                 </HStack>
                 <Divider />

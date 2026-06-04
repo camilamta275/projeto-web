@@ -10,4 +10,18 @@ export const categoryController = {
       next(error);
     }
   },
+
+  async getById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = Number(req.params['id']);
+      if (isNaN(id)) {
+        res.status(400).json({ error: 'ID inválido.' });
+        return;
+      }
+      const category = await categoryService.findById(id);
+      res.status(200).json(category);
+    } catch (error) {
+      next(error);
+    }
+  },
 };
