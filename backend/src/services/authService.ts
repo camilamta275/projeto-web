@@ -22,13 +22,17 @@ export const authService = {
 
     const hashedPassword = await bcrypt.hash(senha, 10);
 
-    const usuario = await prisma.usuario.create({
-      data: {
-        nome,
-        email,
-        senha: hashedPassword,
-        perfil: 'Cidad_o', // Role padrão atribuído automaticamente
-      },
+    const usuario = await prisma.$transaction(async (tx) => {
+      const created = await tx.usuario.create({
+        data: {
+          nome,
+          email,
+          senha: hashedPassword,
+          perfil: 'Cidadao',
+        },
+      });
+      await tx.cidadao.create({ data: { id: created.id } });
+      return created;
     });
 
     return usuario;

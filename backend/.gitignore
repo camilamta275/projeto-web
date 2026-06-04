@@ -80,3 +80,5 @@ desktop.ini
 *.orig
 *.tgz
 *.zip
+
+package-lock.json
