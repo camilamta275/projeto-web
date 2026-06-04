@@ -1,42 +1,44 @@
 #!/bin/bash
 
 # ============================================================================
-# Script de Setup do Backend
-# Instala dependências, configura banco de dados e prepara o ambiente
+# Script de Setup do Backend — Fiscalize
 # ============================================================================
 
-set -e  # Para a execução se algum comando falhar
+set -e
 
-# Cores para output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Iniciando Setup do Backend${NC}"
+echo -e "${BLUE}  Setup do Backend — Fiscalize${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}\n"
 
 # ============================================================================
-# 1. Verificar se Node.js e npm estão instalados
+# 1. Verificar Node.js e npm
 # ============================================================================
 echo -e "${YELLOW}[1/6] Verificando dependências do sistema...${NC}"
 
 if ! command -v node &> /dev/null; then
-    echo -e "${RED}✗ Node.js não encontrado. Por favor, instale Node.js 18+ de https://nodejs.org${NC}"
+    echo -e "${RED}✗ Node.js não encontrado. Instale Node.js 18+ em https://nodejs.org${NC}"
     exit 1
 fi
 
 if ! command -v npm &> /dev/null; then
-    echo -e "${RED}✗ npm não encontrado. Por favor, instale npm junto com Node.js${NC}"
+    echo -e "${RED}✗ npm não encontrado. Instale junto com o Node.js.${NC}"
     exit 1
 fi
 
-NODE_VERSION=$(node --version)
-NPM_VERSION=$(npm --version)
-echo -e "${GREEN}✓ Node.js ${NODE_VERSION} encontrado${NC}"
-echo -e "${GREEN}✓ npm ${NPM_VERSION} encontrado${NC}\n"
+if ! command -v psql &> /dev/null; then
+    echo -e "${RED}✗ psql não encontrado. Instale o PostgreSQL 14+ antes de continuar.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ Node.js $(node --version)${NC}"
+echo -e "${GREEN}✓ npm $(npm --version)${NC}"
+echo -e "${GREEN}✓ psql $(psql --version | awk '{print $3}')${NC}\n"
 
 # ============================================================================
 # 2. Instalar dependências npm
@@ -44,88 +46,102 @@ echo -e "${GREEN}✓ npm ${NPM_VERSION} encontrado${NC}\n"
 echo -e "${YELLOW}[2/6] Instalando dependências npm...${NC}"
 
 if [ -f "node_modules/.package-lock.json" ]; then
-    echo -e "${YELLOW}Dependências já instaladas. Pulando...${NC}"
+    echo -e "${YELLOW}Dependências já instaladas. Pulando...${NC}\n"
 else
     npm install
-    echo -e "${GREEN}✓ Dependências instaladas com sucesso${NC}\n"
+    echo -e "${GREEN}✓ Dependências instaladas${NC}\n"
 fi
 
 # ============================================================================
-# 3. Configurar arquivo .env
+# 3. Configurar .env
 # ============================================================================
 echo -e "${YELLOW}[3/6] Configurando arquivo .env...${NC}"
 
 if [ -f ".env" ]; then
-    echo -e "${YELLOW}Arquivo .env já existe. Pulando criação...${NC}"
+    echo -e "${YELLOW}Arquivo .env já existe. Pulando criação...${NC}\n"
 else
     if [ -f ".env.example" ]; then
         cp .env.example .env
         echo -e "${GREEN}✓ Arquivo .env criado a partir de .env.example${NC}"
-        echo -e "${YELLOW}⚠ IMPORTANTE: Edite o arquivo .env com suas configurações!${NC}"
-        echo -e "${YELLOW}  - DATABASE_URL: Sua URL do PostgreSQL${NC}"
-        echo -e "${YELLOW}  - JWT_SECRET: Uma chave segura para tokens${NC}"
-        echo -e "${YELLOW}  - FRONTEND_URL: URL do seu frontend${NC}"
+        echo -e "${YELLOW}⚠ Edite o .env antes de continuar:${NC}"
+        echo -e "${YELLOW}  - DATABASE_URL  → URL do seu PostgreSQL${NC}"
+        echo -e "${YELLOW}  - JWT_SECRET    → Chave segura para tokens JWT${NC}"
+        echo -e "${YELLOW}  - FRONTEND_URL  → URL do frontend (ex: http://localhost:3001)${NC}\n"
+        echo -e "${RED}Edite o .env e execute este script novamente.${NC}"
+        exit 0
     else
-        echo -e "${RED}✗ Arquivo .env.example não encontrado!${NC}"
+        echo -e "${RED}✗ .env.example não encontrado.${NC}"
         exit 1
     fi
 fi
 
-echo ""
-
-# ============================================================================
-# 4. Gerar Prisma Client
-# ============================================================================
-echo -e "${YELLOW}[4/6] Gerando Prisma Client...${NC}"
-
-npx prisma generate
-echo -e "${GREEN}✓ Prisma Client gerado com sucesso${NC}\n"
-
-# ============================================================================
-# 5. Executar migrações do banco de dados
-# ============================================================================
-echo -e "${YELLOW}[5/6] Sincronizando banco de dados...${NC}"
-
-if grep -q "^DATABASE_URL=" .env 2>/dev/null; then
-    npx prisma migrate dev --skip-generate || {
-        echo -e "${YELLOW}Não há migrações pendentes ou banco já sincronizado${NC}"
-    }
-    echo -e "${GREEN}✓ Banco de dados sincronizado${NC}\n"
-else
-    echo -e "${RED}✗ DATABASE_URL não configurada em .env${NC}"
-    echo -e "${YELLOW}Por favor, configure a DATABASE_URL e execute: npx prisma migrate dev${NC}\n"
+# Ler DATABASE_URL do .env
+DB_URL=$(grep "^DATABASE_URL=" .env | cut -d '=' -f2- | tr -d '"')
+if [ -z "$DB_URL" ]; then
+    echo -e "${RED}✗ DATABASE_URL não definida em .env${NC}"
+    exit 1
 fi
 
-# ============================================================================
-# 6. Executar seed (opcional)
-# ============================================================================
-echo -e "${YELLOW}[6/6] Verificando seed do banco...${NC}"
+# Extrair host, porta, usuário e nome do banco da URL
+DB_USER=$(echo "$DB_URL" | sed -E 's|.*://([^:]+):.*|\1|')
+DB_HOST=$(echo "$DB_URL" | sed -E 's|.*@([^:/]+).*|\1|')
+DB_PORT=$(echo "$DB_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')
+DB_NAME=$(echo "$DB_URL" | sed -E 's|.*/([^?]+).*|\1|')
 
-if [ -f "prisma/seed.ts" ] || [ -f "prisma/seed.js" ]; then
-    read -p "Deseja executar o seed do banco de dados? (s/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Ss]$ ]]; then
-        npx prisma db seed
-        echo -e "${GREEN}✓ Seed executado com sucesso${NC}\n"
-    fi
-else
-    echo -e "${YELLOW}Nenhum seed encontrado. Pulando...${NC}\n"
-fi
+echo -e "${GREEN}✓ Banco configurado: ${DB_NAME} em ${DB_HOST}:${DB_PORT}${NC}\n"
 
 # ============================================================================
-# Resumo final
+# 4. Criar banco e instalar extensão uuid-ossp
+# ============================================================================
+echo -e "${YELLOW}[4/6] Preparando banco de dados...${NC}"
+
+# Criar banco se não existir
+psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -tc \
+    "SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'" \
+    | grep -q 1 || {
+    psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" \
+        -c "CREATE DATABASE \"${DB_NAME}\";" && \
+        echo -e "${GREEN}✓ Banco '${DB_NAME}' criado${NC}"
+}
+
+# Instalar extensão uuid-ossp (necessária para gerar UUIDs no banco)
+psql -U "$DB_USER" -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME" \
+    -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";' > /dev/null 2>&1
+echo -e "${GREEN}✓ Extensão uuid-ossp instalada${NC}\n"
+
+# ============================================================================
+# 5. Executar migrações
+# ============================================================================
+echo -e "${YELLOW}[5/6] Executando migrações...${NC}"
+
+npx prisma migrate deploy
+echo -e "${GREEN}✓ Migrações aplicadas${NC}\n"
+
+# ============================================================================
+# 6. Seed (categorias + admin)
+# ============================================================================
+echo -e "${YELLOW}[6/6] Populando banco com dados iniciais...${NC}"
+
+npx prisma db seed
+echo -e "${GREEN}✓ Seed executado (categorias e usuário admin criados)${NC}\n"
+
+# ============================================================================
+# Resumo
 # ============================================================================
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}✓ Setup concluído com sucesso!${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}\n"
 
+echo -e "${YELLOW}Credenciais do Admin:${NC}"
+echo -e "  Email: ${BLUE}admin@fiscalize.gov.br${NC}"
+echo -e "  Senha: ${BLUE}Admin@123456${NC}\n"
+
 echo -e "${YELLOW}Próximos passos:${NC}"
-echo -e "  1. Edite o arquivo ${BLUE}.env${NC} com suas configurações"
-echo -e "  2. Inicie o servidor com: ${BLUE}npm run dev${NC}"
-echo -e "  3. O servidor rodará em: ${BLUE}http://localhost:\${PORT}${NC}"
-echo ""
+echo -e "  1. Inicie o servidor: ${BLUE}npm run dev${NC}"
+echo -e "  2. API disponível em: ${BLUE}http://localhost:3000${NC}\n"
+
 echo -e "${YELLOW}Comandos úteis:${NC}"
-echo -e "  - ${BLUE}npm run dev${NC}           Iniciar servidor em modo desenvolvimento"
-echo -e "  - ${BLUE}npx prisma studio${NC}    Visualizar dados do banco"
-echo -e "  - ${BLUE}npx prisma migrate dev${NC} Criar nova migração"
+echo -e "  ${BLUE}npm run dev${NC}              Iniciar servidor em desenvolvimento"
+echo -e "  ${BLUE}npx prisma studio${NC}        Visualizar dados do banco"
+echo -e "  ${BLUE}npx prisma migrate dev${NC}   Criar nova migração"
 echo ""

@@ -1,32 +1,45 @@
 import { create } from 'zustand'
 import type { Usuario } from '@/types'
+import { api } from '@/lib/api'
 
-// Usuários mock para fallback quando o JSON Server não estiver disponível
 const MOCK_USUARIOS: Usuario[] = [
-  { id: '1', nome: 'João Silva', email: 'joao@example.com', perfil: 'Cidadão', status: 'Ativo', criadoEm: '2026-01-15T10:30:00Z' },
-  { id: '2', nome: 'Maria Santos', email: 'maria@example.com', perfil: 'Cidadão', status: 'Ativo', criadoEm: '2026-02-10T14:20:00Z' },
   { id: '3', nome: 'João da Silva Gestor', email: 'joao@prefeitura.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
-  { id: '3b', nome: 'João da Silva Gestor', email: 'pedro@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
+  { id: '3b', nome: 'Pedro Gestor', email: 'pedro@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
   { id: '4', nome: 'Ana Oliveira', email: 'ana@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '2', status: 'Ativo', criadoEm: '2025-11-15T08:30:00Z' },
   { id: '5', nome: 'Carlos Ferreira', email: 'carlos@compesa.pe.gov.br', perfil: 'Gestor', orgaoId: '3', status: 'Ativo', criadoEm: '2025-10-20T11:45:00Z' },
   { id: '6', nome: 'Admin Sistema', email: 'admin@recife.pe.gov.br', perfil: 'Admin', status: 'Ativo', criadoEm: '2025-09-01T00:00:00Z' },
 ]
 
+function mapUsuario(data: any): Usuario {
+  const perfilMap: Record<string, 'Cidadão' | 'Gestor' | 'Admin'> = {
+    Cidadao: 'Cidadão',
+    Gestor: 'Gestor',
+    Admin: 'Admin',
+  }
+  return {
+    id: data.id,
+    nome: data.nome,
+    email: data.email,
+    perfil: perfilMap[data.perfil] ?? data.perfil,
+    status: data.status ?? 'Ativo',
+    criadoEm: data.criadoem ?? data.criadoEm ?? new Date().toISOString(),
+  }
+}
+
 interface AuthState {
   usuario: Usuario | null
-  token: string | null
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
-  
+
   login: (email: string, senha: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
+  fetchMe: () => Promise<void>
   setUsuario: (usuario: Usuario | null) => void
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   usuario: null,
-  token: null,
   isAuthenticated: false,
   isLoading: false,
   error: null,
@@ -34,54 +47,46 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, senha: string) => {
     set({ isLoading: true, error: null })
     try {
-      // Tenta o JSON Server primeiro, cai no mock se falhar
-      let usuario: Usuario | null = null
+      // Try real backend first (Cidadao)
       try {
-        const response = await fetch('http://localhost:3001/usuarios?email=' + encodeURIComponent(email))
-        if (response.ok) {
-          const usuarios = await response.json()
-          usuario = usuarios[0] ?? null
-        }
+        const { data } = await api.post('/auth/login', { email, senha })
+        set({ usuario: mapUsuario(data), isAuthenticated: true, isLoading: false })
+        return
       } catch {
-        // JSON Server indisponível — usa dados mock locais
-        usuario = MOCK_USUARIOS.find((u) => u.email === email) ?? null
+        // Fall through to mock for Gestor/Admin
       }
 
-      if (!usuario) {
-        // Tenta no mock mesmo que o servidor tenha respondido sem resultado
-        usuario = MOCK_USUARIOS.find((u) => u.email === email) ?? null
-      }
-
-      if (!usuario || senha !== '123456') {
+      // Fallback: mock users for Gestor and Admin
+      const mock = MOCK_USUARIOS.find((u) => u.email === email)
+      if (!mock || senha !== '123456') {
         throw new Error('E-mail ou senha incorretos')
       }
-
-      set({
-        usuario,
-        token: 'mock-token-' + usuario.id,
-        isAuthenticated: true,
-        isLoading: false,
-      })
+      set({ usuario: mock, isAuthenticated: true, isLoading: false })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao fazer login'
-      set({
-        usuario: null,
-        token: null,
-        isAuthenticated: false,
-        error: message,
-        isLoading: false,
-      })
+      set({ usuario: null, isAuthenticated: false, error: message, isLoading: false })
       throw new Error(message)
     }
   },
 
-  logout: () => {
-    set({
-      usuario: null,
-      token: null,
-      isAuthenticated: false,
-      error: null,
-    })
+  logout: async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch {
+      // ignore
+    } finally {
+      set({ usuario: null, isAuthenticated: false, error: null })
+    }
+  },
+
+  fetchMe: async () => {
+    set({ isLoading: true })
+    try {
+      const { data } = await api.get('/auth/me')
+      set({ usuario: mapUsuario(data), isAuthenticated: true, isLoading: false })
+    } catch {
+      set({ usuario: null, isAuthenticated: false, isLoading: false })
+    }
   },
 
   setUsuario: (usuario: Usuario | null) => {

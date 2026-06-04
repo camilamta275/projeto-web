@@ -2,6 +2,15 @@ import { prisma } from '../src/config/prisma';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 
+const CATEGORIAS = [
+  { nome: 'Infraestrutura', descricao: 'Buracos, pavimentação, calçadas danificadas' },
+  { nome: 'Água e Esgoto', descricao: 'Vazamentos, falta de água, esgoto a céu aberto' },
+  { nome: 'Iluminação Pública', descricao: 'Postes apagados, fiação exposta, lâmpadas queimadas' },
+  { nome: 'Saneamento Básico', descricao: 'Coleta de lixo, entulho, descarte irregular' },
+  { nome: 'Sinalização', descricao: 'Placas faltando, semáforos com defeito, faixas apagadas' },
+  { nome: 'Outros Problemas', descricao: 'Outros problemas urbanos não listados acima' },
+]
+
 async function seed() {
   console.log('🌱 Iniciando seed do banco de dados...\n');
 
@@ -11,14 +20,24 @@ async function seed() {
   const adminName = process.env.SEED_ADMIN_NAME || 'Administrador';
 
   try {
-    // 1. Verificar se admin já existe
+    // 1. Seed categories
+    for (const cat of CATEGORIAS) {
+      await prisma.categoria.upsert({
+        where: { nome: cat.nome },
+        update: {},
+        create: { nome: cat.nome, descricao: cat.descricao, ativo: true },
+      })
+    }
+    console.log(`✓ ${CATEGORIAS.length} categorias criadas/verificadas`)
+
+    // 2. Verificar se admin já existe
     const adminExistente = await prisma.usuario.findUnique({
       where: { email: adminEmail },
     });
 
     if (adminExistente) {
-      console.log(`✓ Admin já existe: ${adminEmail}`);
-      return;
+      console.log(`✓ Admin já existe: ${adminEmail}`)
+      return
     }
 
     // 2. Hash da senha
