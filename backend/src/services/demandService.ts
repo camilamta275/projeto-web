@@ -1,6 +1,19 @@
 import { prisma } from '../config/prisma';
 import { AppError } from '../middlewares/errorMiddleware';
 
+interface UpdateDemandInput {
+  id: string;
+  userId: string;
+  title?: string;
+  description?: string;
+  location?: string;
+  categoryId?: number;
+  latitude?: number;
+  longitude?: number;
+}
+
+const BLOCKED_STATUSES = ['Em_Andamento', 'Resolvido', 'Fechado'] as const;
+
 interface CreateDemandInput {
   title: string;
   description: string;
@@ -19,6 +32,126 @@ function generateProtocolo(): string {
 }
 
 export const demandService = {
+  async update(input: UpdateDemandInput) {
+    const { id, userId, title, description, location, categoryId, latitude, longitude } = input;
+
+    // 1. Find demand
+    const chamado = await prisma.chamado.findUnique({
+      where: { id },
+      include: { categoria: { select: { id: true, nome: true } } },
+    });
+    if (!chamado) throw new AppError(404, 'Demanda não encontrada.');
+
+    // 2. Ownership check
+    if (chamado.cidadaoid !== userId) {
+      throw new AppError(403, 'Você não tem permissão para editar esta demanda.');
+    }
+
+    // 3. Status check
+    if ((BLOCKED_STATUSES as readonly string[]).includes(chamado.status)) {
+      throw new AppError(403, `Não é possível editar uma demanda com status '${chamado.status}'.`);
+    }
+
+    // 4. If category_id provided, validate and re-resolve org/prioridade/slahoras
+    let orgaoid = chamado.orgaoid;
+    let prioridade = chamado.prioridade;
+    let slahoras = chamado.slahoras;
+
+    if (categoryId !== undefined) {
+      const categoria = await prisma.categoria.findUnique({ where: { id: categoryId } });
+      if (!categoria || !categoria.ativo) {
+        throw new AppError(400, `Categoria inválida: categoria ${categoryId} não encontrada ou inativa.`);
+      }
+
+      const regra = await prisma.regra_competencia.findFirst({
+        where: { categoriaid: categoryId, subcategoria: title ?? chamado.subcategoria },
+      });
+
+      if (regra) {
+        orgaoid = regra.orgaoprincipalid;
+        prioridade = regra.prioridade;
+        slahoras = regra.slahoras;
+      } else {
+        const orgaoCategoria = await prisma.orgao_categoria.findFirst({
+          where: { categoriaid: categoryId },
+          include: { orgao: true },
+        });
+        if (orgaoCategoria) {
+          orgaoid = orgaoCategoria.orgaoid;
+          slahoras = orgaoCategoria.orgao.slahoras;
+        } else {
+          const orgao = await prisma.orgao.findFirst({ where: { status: 'Ativo' } });
+          if (!orgao) throw new AppError(500, 'Nenhum órgão responsável encontrado no sistema.');
+          orgaoid = orgao.id;
+          slahoras = orgao.slahoras;
+        }
+      }
+    }
+
+    // 5. Update chamado + log timeline_event atomically
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.chamado.update({
+        where: { id },
+        data: {
+          ...(title !== undefined && { subcategoria: title }),
+          ...(description !== undefined && { descricao: description }),
+          ...(location !== undefined && { endereco: location }),
+          ...(categoryId !== undefined && { categoriaid: categoryId }),
+          ...(latitude !== undefined && { latitude }),
+          ...(longitude !== undefined && { longitude }),
+          orgaoid,
+          prioridade,
+          slahoras,
+          atualizadoem: new Date(),
+        },
+        include: { categoria: { select: { id: true, nome: true } } },
+      });
+
+      const usuario = await tx.usuario.findUnique({
+        where: { id: userId },
+        select: { nome: true },
+      });
+
+      await tx.timeline_event.create({
+        data: {
+          chamadoid: id,
+          tipo: 'mensagem',
+          titulo: 'Demanda atualizada',
+          descricao: 'Dados da demanda foram atualizados pelo cidadão.',
+          autor: usuario?.nome ?? 'Cidadão',
+          dadosantigos: {
+            subcategoria: chamado.subcategoria,
+            descricao: chamado.descricao,
+            endereco: chamado.endereco,
+            categoriaid: chamado.categoriaid,
+          },
+          dadosnovos: {
+            subcategoria: title ?? chamado.subcategoria,
+            descricao: description ?? chamado.descricao,
+            endereco: location ?? chamado.endereco,
+            categoriaid: categoryId ?? chamado.categoriaid,
+          },
+        },
+      });
+
+      return result;
+    });
+
+    return {
+      id: updated.id,
+      protocolo: updated.protocolo,
+      title: updated.subcategoria,
+      description: updated.descricao,
+      category: updated.categoria,
+      location: updated.endereco,
+      latitude: Number(updated.latitude),
+      longitude: Number(updated.longitude),
+      status: updated.status,
+      createdAt: updated.criadoem,
+      updatedAt: updated.atualizadoem,
+    };
+  },
+
   async create(input: CreateDemandInput) {
     const { title, description, categoryId, location, latitude, longitude, userId } = input;
 
