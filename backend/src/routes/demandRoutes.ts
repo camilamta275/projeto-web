@@ -5,6 +5,6 @@ import { requireRole } from '../middlewares/requireRole';
 
 const router = Router();
 
-router.post('/', authenticate, requireRole(['Cidadão']), demandController.create);
+router.post('/', authenticate, requireRole(['Cidadao']), demandController.create);
 
 export default router;

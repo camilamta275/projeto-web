@@ -28,7 +28,7 @@ export const authService = {
           nome,
           email,
           senha: hashedPassword,
-          perfil: 'Cidad_o',
+          perfil: 'Cidadao',
         },
       });
       await tx.cidadao.create({ data: { id: created.id } });

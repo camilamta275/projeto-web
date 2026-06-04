@@ -268,7 +268,7 @@ model usuario_audit {
 }
 
 enum perfil {
-  Cidad_o @map("Cidadão")
+  Cidadao @map("Cidadão")
   Gestor
   Admin
 }

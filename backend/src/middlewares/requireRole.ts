@@ -1,20 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 
 // Extraindo os perfis do Modelo Conceitual para garantir consistência
-export type PerfilUsuario = 'Cidadão' | 'Gestor' | 'Admin';
+export type PerfilUsuario = 'Cidadao' | 'Gestor' | 'Admin';
 
-/**
- * Define a hierarquia de permissões:
- * Admin > Gestor > Cidadão
- * 
- * Admin tem acesso a TODAS as rotas de Gestor e Cidadão
- * Gestor tem acesso a rotas de Gestor e Cidadão
- * Cidadão tem acesso apenas a rotas de Cidadão
- */
 const hierarchyMap: Record<string, string[]> = {
-  Admin: ['Admin', 'Gestor', 'Cidadão'], // Admin tem acesso a tudo
-  Gestor: ['Gestor', 'Cidadão'], // Gestor tem acesso a Gestor e Cidadão
-  Cidadão: ['Cidadão'], // Cidadão tem acesso apenas a Cidadão
+  Admin: ['Admin', 'Gestor', 'Cidadao'],
+  Gestor: ['Gestor', 'Cidadao'],
+  Cidadao: ['Cidadao'],
 };
 
 export const requireRole = (allowedRoles: string[]) => {
