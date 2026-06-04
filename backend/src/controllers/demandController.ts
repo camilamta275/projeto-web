@@ -27,6 +27,16 @@ export const demandController = {
       next(error);
     }
   },
+  async getById(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = req.params['id'] as string;
+      const demand = await demandService.findById(id, req.user!.id, req.user!.perfil);
+      res.status(200).json(demand);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params['id'] as string;
