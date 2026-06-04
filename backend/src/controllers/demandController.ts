@@ -27,6 +27,26 @@ export const demandController = {
       next(error);
     }
   },
+  async list(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { status, categoria, regiao, page, limit } = req.query;
+
+      const result = await demandService.list({
+        userId: req.user!.id,
+        perfil: req.user!.perfil,
+        ...(status !== undefined && { status: String(status) }),
+        ...(categoria !== undefined && { categoria: Number(categoria) }),
+        ...(regiao !== undefined && { regiao: String(regiao) }),
+        page: page ? Math.max(1, Number(page)) : 1,
+        limit: limit ? Math.min(100, Math.max(1, Number(limit))) : 20,
+      });
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getById(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const id = req.params['id'] as string;

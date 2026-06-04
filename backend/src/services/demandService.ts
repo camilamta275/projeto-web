@@ -12,6 +12,16 @@ interface UpdateDemandInput {
   longitude?: number;
 }
 
+interface ListDemandsInput {
+  userId: string;
+  perfil: string;
+  status?: string;
+  categoria?: number;
+  regiao?: string;
+  page: number;
+  limit: number;
+}
+
 const BLOCKED_STATUSES = ['Em_Andamento', 'Resolvido', 'Fechado'] as const;
 
 interface CreateDemandInput {
@@ -32,6 +42,56 @@ function generateProtocolo(): string {
 }
 
 export const demandService = {
+  async list(input: ListDemandsInput) {
+    const { userId, perfil, status, categoria, regiao, page, limit } = input;
+
+    const where: Record<string, unknown> = {};
+
+    if (perfil === 'Cidadao') where['cidadaoid'] = userId;
+    if (status) where['status'] = status;
+    if (categoria) where['categoriaid'] = categoria;
+    if (regiao) where['endereco'] = { contains: regiao, mode: 'insensitive' };
+
+    const include = {
+      categoria: { select: { id: true, nome: true } },
+      cidadao: {
+        include: { usuario: { select: { id: true, nome: true, email: true } } },
+      },
+    };
+
+    const [chamados, total] = await Promise.all([
+      prisma.chamado.findMany({
+        where,
+        include,
+        orderBy: { criadoem: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.chamado.count({ where }),
+    ]);
+
+    return {
+      data: chamados.map((c) => ({
+        id: c.id,
+        protocolo: c.protocolo,
+        title: c.subcategoria,
+        description: c.descricao,
+        status: c.status,
+        location: c.endereco,
+        latitude: Number(c.latitude),
+        longitude: Number(c.longitude),
+        category: c.categoria,
+        creator: c.cidadao.usuario,
+        createdAt: c.criadoem,
+        updatedAt: c.atualizadoem,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  },
+
   async findById(id: string, userId: string, perfil: string) {
     const chamado = await prisma.chamado.findUnique({
       where: { id },
