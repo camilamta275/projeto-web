@@ -15,7 +15,7 @@ export function middleware(request: NextRequest) {
   
   // Parse auth session from localStorage (Note: In production, use HttpOnly cookies)
   // For now, we check the auth header or cookie
-  const sessionCookie = request.cookies.get('session')
+  const sessionCookie = request.cookies.get('token')
   
   // Routes that don't require authentication
   const publicRoutes = ['/login', '/']
