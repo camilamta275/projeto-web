@@ -89,3 +89,5 @@ src/mocks/db.local.json
 *.orig
 *.tgz
 *.zip
+
+package-lock.json

@@ -82,4 +82,4 @@ cypress/screenshots/
 cypress/videos/
 cypress/downloads/
 
-*package-lock.json
+package-lock.json
