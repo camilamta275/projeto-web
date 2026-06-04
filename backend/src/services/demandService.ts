@@ -32,6 +32,44 @@ function generateProtocolo(): string {
 }
 
 export const demandService = {
+  async findById(id: string, userId: string, perfil: string) {
+    const chamado = await prisma.chamado.findUnique({
+      where: { id },
+      include: {
+        categoria: { select: { id: true, nome: true } },
+        cidadao: {
+          include: { usuario: { select: { id: true, nome: true, email: true } } },
+        },
+        timeline_event: {
+          orderBy: { timestamp: 'asc' },
+          select: { tipo: true, titulo: true, descricao: true, autor: true, timestamp: true },
+        },
+      },
+    });
+
+    if (!chamado) throw new AppError(404, 'Demanda não encontrada.');
+
+    if (perfil === 'Cidadao' && chamado.cidadaoid !== userId) {
+      throw new AppError(403, 'Você não tem permissão para acessar esta demanda.');
+    }
+
+    return {
+      id: chamado.id,
+      protocolo: chamado.protocolo,
+      title: chamado.subcategoria,
+      description: chamado.descricao,
+      status: chamado.status,
+      location: chamado.endereco,
+      latitude: Number(chamado.latitude),
+      longitude: Number(chamado.longitude),
+      category: chamado.categoria,
+      creator: chamado.cidadao.usuario,
+      createdAt: chamado.criadoem,
+      updatedAt: chamado.atualizadoem,
+      logs: chamado.timeline_event,
+    };
+  },
+
   async update(input: UpdateDemandInput) {
     const { id, userId, title, description, location, categoryId, latitude, longitude } = input;
 
