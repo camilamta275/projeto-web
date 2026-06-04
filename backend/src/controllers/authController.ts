@@ -50,7 +50,7 @@ export const authController = {
         maxAge: 24 * 60 * 60 * 1000,
       });
 
-      res.status(200).json({ id: usuario.id, email: usuario.email, perfil: usuario.perfil });
+      res.status(200).json({ id: usuario.id, nome: usuario.nome, email: usuario.email, perfil: usuario.perfil });
     } catch (error) {
       next(error);
     }
