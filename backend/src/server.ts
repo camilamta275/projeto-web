@@ -6,6 +6,7 @@ import gestorRoutes from './routes/gestorRoutes';
 import userRoutes from './routes/userRoutes';
 import demandRoutes from './routes/demandRoutes';
 import categoryRoutes from './routes/categoryRoutes';
+import adminRoutes from './routes/adminRoutes';
 import { errorHandler } from './middlewares/errorMiddleware';
 import 'dotenv/config';
 
@@ -26,6 +27,7 @@ app.use('/gestor', gestorRoutes);
 app.use('/users', userRoutes);
 app.use('/demands', demandRoutes);
 app.use('/categories', categoryRoutes);
+app.use('/admin', adminRoutes);
 
 // Middleware de tratamento de erros (DEVE SER O ÚLTIMO)
 app.use(errorHandler);
