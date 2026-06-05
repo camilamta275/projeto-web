@@ -1,6 +1,11 @@
 import { prisma } from '../src/config/prisma';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { tipo_orgao } from '@prisma/client';
+
+// =============================================================
+// DADOS DE SEED
+// =============================================================
 
 const CATEGORIAS = [
   { nome: 'Infraestrutura', descricao: 'Buracos, pavimentação, calçadas danificadas' },
@@ -11,6 +16,91 @@ const CATEGORIAS = [
   { nome: 'Outros Problemas', descricao: 'Outros problemas urbanos não listados acima' },
 ]
 
+// Corrigido: usando o enum tipo_orgao do Prisma
+// "Concessionária" no Prisma vira "Concession_ria" por causa do acento
+const ORGAOS: {
+  id: string
+  nome: string
+  sigla: string
+  tipo: tipo_orgao
+  slahoras: number
+  responsavel: string
+  email: string
+  telefone: string
+  categorias: string[]
+}[] = [
+    {
+      id: 'EMLURB',
+      nome: 'Empresa de Manutenção e Limpeza Urbana do Recife',
+      sigla: 'EMLURB',
+      tipo: 'Municipal',
+      slahoras: 72,
+      responsavel: 'Diretoria de Operações',
+      email: 'atendimento@emlurb.recife.pe.gov.br',
+      telefone: '(81) 3355-8000',
+      categorias: ['Infraestrutura', 'Saneamento Básico'],
+    },
+    {
+      id: 'COMPESA',
+      nome: 'Companhia Pernambucana de Saneamento',
+      sigla: 'COMPESA',
+      tipo: 'Estadual',
+      slahoras: 48,
+      responsavel: 'Ouvidoria COMPESA',
+      email: 'ouvidoria@compesa.com.br',
+      telefone: '0800 081 0195',
+      categorias: ['Água e Esgoto'],
+    },
+    {
+      id: 'CELPE',
+      nome: 'Companhia Energética de Pernambuco',
+      sigla: 'CELPE',
+      tipo: 'Concession_ria', // enum gerado pelo Prisma para "Concessionária"
+      slahoras: 24,
+      responsavel: 'Central de Atendimento CELPE',
+      email: 'atendimento@celpe.com.br',
+      telefone: '0800 081 0196',
+      categorias: ['Iluminação Pública'],
+    },
+    {
+      id: 'CTTU',
+      nome: 'Autarquia de Trânsito e Transporte Urbano do Recife',
+      sigla: 'CTTU',
+      tipo: 'Municipal',
+      slahoras: 48,
+      responsavel: 'Diretoria de Engenharia de Tráfego',
+      email: 'atendimento@cttu.recife.pe.gov.br',
+      telefone: '(81) 3182-5800',
+      categorias: ['Sinalização'],
+    },
+    {
+      id: 'SINFRA',
+      nome: 'Secretaria de Infraestrutura e Recursos Hídricos de Pernambuco',
+      sigla: 'SINFRA',
+      tipo: 'Estadual',
+      slahoras: 96,
+      responsavel: 'Gabinete da Secretaria',
+      email: 'contato@sinfra.pe.gov.br',
+      telefone: '(81) 3183-3000',
+      categorias: ['Infraestrutura'],
+    },
+    {
+      id: 'SEMC',
+      nome: 'Secretaria Executiva de Manutenção da Cidade do Recife',
+      sigla: 'SEMC',
+      tipo: 'Municipal',
+      slahoras: 72,
+      responsavel: 'Coordenadoria de Manutenção',
+      email: 'manutencao@semc.recife.pe.gov.br',
+      telefone: '(81) 3355-9000',
+      categorias: ['Infraestrutura', 'Outros Problemas'],
+    },
+  ]
+
+// =============================================================
+// SEED
+// =============================================================
+
 async function seed() {
   console.log('🌱 Iniciando seed do banco de dados...\n');
 
@@ -20,7 +110,10 @@ async function seed() {
   const adminName = process.env.SEED_ADMIN_NAME || 'Administrador';
 
   try {
-    // 1. Seed categories
+
+    // ----------------------------------------------------------
+    // 1. Categorias
+    // ----------------------------------------------------------
     for (const cat of CATEGORIAS) {
       await prisma.categoria.upsert({
         where: { nome: cat.nome },
@@ -30,7 +123,41 @@ async function seed() {
     }
     console.log(`✓ ${CATEGORIAS.length} categorias criadas/verificadas`)
 
-    // 2. Verificar se admin já existe
+    const categoriaRows = await prisma.categoria.findMany({
+      select: { id: true, nome: true },
+    })
+    const catId = (nome: string): number => {
+      const found = categoriaRows.find(c => c.nome === nome)
+      if (!found) throw new Error(`Categoria não encontrada: "${nome}"`)
+      return found.id
+    }
+
+    // ----------------------------------------------------------
+    // 2. Órgãos + vínculos com categorias
+    // ----------------------------------------------------------
+    for (const orgao of ORGAOS) {
+      const { categorias, ...orgaoData } = orgao
+
+      await prisma.orgao.upsert({
+        where: { id: orgaoData.id },
+        update: {},
+        create: { ...orgaoData, status: 'Ativo' },
+      })
+
+      // Corrigido: orgao_categoria (snake_case) em vez de orgaoCategoria
+      await prisma.orgao_categoria.createMany({
+        data: categorias.map(nome => ({
+          orgaoid: orgaoData.id,
+          categoriaid: catId(nome),
+        })),
+        skipDuplicates: true,
+      })
+    }
+    console.log(`✓ ${ORGAOS.length} órgãos criados/verificados com seus vínculos de categoria`)
+
+    // ----------------------------------------------------------
+    // 3. Admin
+    // ----------------------------------------------------------
     const adminExistente = await prisma.usuario.findUnique({
       where: { email: adminEmail },
     });
