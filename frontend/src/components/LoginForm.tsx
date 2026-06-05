@@ -15,11 +15,13 @@ import {
   FormErrorMessage,
   Divider,
   Badge,
+  Link,
 } from '@chakra-ui/react'
 import { useForm } from '@/hooks'
 import { loginSchema } from '@/lib/validations'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
+import NextLink from 'next/link'
 
 const DEMO_USERS = [
   { email: 'joao@example.com', nome: 'João Silva', perfil: 'Cidadão', color: 'blue' },
@@ -134,6 +136,13 @@ export function LoginForm() {
             Clique para preencher automaticamente
           </Text>
         </Box>
+
+        <Text fontSize="sm" color="gray.500">
+          Não tem uma conta?{' '}
+          <Link as={NextLink} href="/registro" color="primary.600" fontWeight="medium">
+            Criar conta
+          </Link>
+        </Text>
       </VStack>
     </Box>
   )

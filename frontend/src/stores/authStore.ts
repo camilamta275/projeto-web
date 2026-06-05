@@ -32,6 +32,7 @@ interface AuthState {
   isLoading: boolean
   error: string | null
 
+  register: (nome: string, email: string, senha: string) => Promise<void>
   login: (email: string, senha: string) => Promise<void>
   logout: () => Promise<void>
   fetchMe: () => Promise<void>
@@ -43,6 +44,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isLoading: false,
   error: null,
+
+  register: async (nome: string, email: string, senha: string) => {
+    set({ isLoading: true, error: null })
+    try {
+      await api.post('/auth/register', { nome, email, senha })
+      set({ isLoading: false })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro ao criar conta'
+      set({ error: message, isLoading: false })
+      throw new Error(message)
+    }
+  },
 
   login: async (email: string, senha: string) => {
     set({ isLoading: true, error: null })
