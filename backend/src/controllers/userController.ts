@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma';
+import { userService } from '../services/userService';
+import { AppError } from '../middlewares/errorMiddleware';
 
 export const userController = {
   async listarUsuarios(req: Request, res: Response, next: NextFunction) {
@@ -25,7 +27,7 @@ export const userController = {
       const totalPages = Math.ceil(totalUsuarios / limit);
 
       res.status(200).json({
-        usuarios: usuarios.map(u => ({
+        usuarios: usuarios.map((u) => ({
           id: u.id,
           name: u.nome,
           email: u.email,
@@ -39,6 +41,26 @@ export const userController = {
           totalPages,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async buscarUsuarioPorId(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { id } = req.params;
+
+      if (!id || Array.isArray(id)) {
+        throw new AppError(400, 'ID do usuário é obrigatório.');
+      }
+
+      const usuario = await userService.findById(id);
+
+      res.status(200).json(usuario);
     } catch (error) {
       next(error);
     }

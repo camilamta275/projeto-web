@@ -17,9 +17,13 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
     "concurrently": "^9.2.1",
     "cypress": "^15.16.0",
     "cypress-xpath": "^2.0.1",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "uuid": "^14.0.0"
   }
 }

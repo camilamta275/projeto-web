@@ -10,4 +10,18 @@ router.post('/', authenticate, requireRole(['Cidadao']), demandController.create
 router.get('/:id', authenticate, demandController.getById);
 router.put('/:id', authenticate, requireRole(['Cidadao']), demandController.update);
 
+router.patch(
+  '/:id/status',
+  authenticate,
+  requireRole(['Gestor']),
+  demandController.updateStatus
+);
+
+router.delete(
+  '/:id',
+  authenticate,
+  requireRole(['Gestor']),
+  demandController.delete
+);
+
 export default router;

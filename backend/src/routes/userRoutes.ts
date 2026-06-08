@@ -7,7 +7,18 @@ const router = Router();
 
 router.use(authenticate);
 
-// Apenas Gestor e Admin podem acessar (requireRole lida com a hierarquia)
-router.get('/', requireRole(['Gestor']), userController.listarUsuarios);
+// Listar usuários
+router.get(
+  '/',
+  requireRole(['Gestor']),
+  userController.listarUsuarios
+);
+
+// Buscar usuário por ID
+router.get(
+  '/:id',
+  requireRole(['Gestor']),
+  userController.buscarUsuarioPorId
+);
 
 export default router;
