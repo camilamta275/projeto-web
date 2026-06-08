@@ -78,4 +78,47 @@ export const demandController = {
       next(error);
     }
   },
+
+async updateStatus(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+
+    if (!id || Array.isArray(id)) {
+      throw new AppError(400, 'ID inválido');
+    }
+
+    const { status_id } = req.body;
+
+    if (!status_id) {
+      throw new AppError(400, 'status_id obrigatório');
+    }
+
+    const result = await demandService.updateStatus(
+      id,
+      req.user!.id,
+      status_id
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+},
+
+async delete(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+
+    if (!id || Array.isArray(id)) {
+      throw new AppError(400, 'ID inválido');
+    }
+
+    await demandService.deleteDemand(id, req.user!.id);
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+},
+
 };

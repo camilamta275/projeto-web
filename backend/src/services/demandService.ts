@@ -352,4 +352,90 @@ export const demandService = {
       createdAt: chamado.criadoem,
     };
   },
+
+  async updateStatus(chamadoId: string, userId: string, newStatus: any) {
+  const chamado = await prisma.chamado.findUnique({
+    where: { id: chamadoId },
+  });
+
+  if (!chamado) throw new AppError(404, 'Demanda não encontrada.');
+
+  const validStatuses = [
+    'Aberto',
+    'Em_An_lise',
+    'Em_Andamento',
+    'Aguardando',
+    'Resolvido',
+    'Fechado',
+  ];
+
+  if (!validStatuses.includes(newStatus)) {
+    throw new AppError(400, `Status inválido.`);
+  }
+
+  const oldStatus = chamado.status;
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.chamado.update({
+      where: { id: chamadoId },
+      data: {
+        status: newStatus,
+        atualizadoem: new Date(),
+      },
+    });
+
+    await tx.timeline_event.create({
+      data: {
+        chamadoid: chamadoId,
+        tipo: 'status',
+        titulo: 'Status atualizado',
+        descricao: `Status alterado de ${oldStatus} para ${newStatus}`,
+        autor: userId,
+        dadosantigos: { status: oldStatus },
+        dadosnovos: { status: newStatus },
+      },
+    });
+
+    return result;
+  });
+
+  return {
+    id: updated.id,
+    status: updated.status,
+    updatedAt: updated.atualizadoem,
+  };
+},
+
+async deleteDemand(chamadoId: string, userId: string) {
+  const chamado = await prisma.chamado.findUnique({
+    where: { id: chamadoId },
+  });
+
+  if (!chamado) {
+    throw new AppError(404, 'Demanda não encontrada.');
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // soft delete
+    await tx.chamado.update({
+      where: { id: chamadoId },
+      data: {
+        status: 'Fechado',
+      },
+    });
+
+    await tx.timeline_event.create({
+      data: {
+        chamadoid: chamadoId,
+        tipo: 'transferencia',
+        titulo: 'Demanda removida',
+        descricao: 'Demanda marcada como excluída (soft delete).',
+        autor: userId,
+        dadosantigos: { status: chamado.status },
+        dadosnovos: { status: 'Fechado' },
+      },
+    });
+  });
+},
+
 };
