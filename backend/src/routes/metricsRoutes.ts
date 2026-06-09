@@ -9,5 +9,6 @@ router.use(authenticate);
 router.use(requireRole(['Gestor']));
 
 router.get('/total-demands', metricsController.totalDemands);
+router.get('/demands-by-category', metricsController.demandsByCategory);
 
 export default router;

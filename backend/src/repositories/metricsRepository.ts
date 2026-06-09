@@ -1,6 +1,19 @@
 import { prisma } from '../config/prisma';
 
 export const metricsRepository = {
+  async demandsByCategory(where: { gestorid?: string }) {
+    const [categorias, grupos] = await Promise.all([
+      prisma.categoria.findMany({ select: { id: true, nome: true } }),
+      prisma.chamado.groupBy({
+        by: ['categoriaid'],
+        where,
+        _count: { id: true },
+      }),
+    ]);
+
+    return { categorias, grupos };
+  },
+
   async countByScope(where: { gestorid?: string }) {
     const [total, aberta, em_andamento, resolvida, encerrada] = await Promise.all([
       prisma.chamado.count({ where }),
