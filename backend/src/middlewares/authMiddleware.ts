@@ -1,10 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt, { TokenExpiredError, JsonWebTokenError } from 'jsonwebtoken';
+import jwt, {
+  TokenExpiredError,
+  JsonWebTokenError,
+} from 'jsonwebtoken';
 import { authService } from '../services/authService';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'chave_secreta_super_segura';
+const JWT_SECRET =
+  process.env.JWT_SECRET || 'chave_secreta_super_segura';
 
-// Estendendo o Request do Express para incluir o payload do usuário
+// Estendendo Request para incluir usuário autenticado
 declare global {
   namespace Express {
     interface Request {
@@ -19,47 +23,88 @@ declare global {
 
 export type AuthRequest = Request;
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    // 1. Tenta ler token do cookie (prioridade)
+    // 1. Token via cookie (prioridade)
     let token = req.cookies.token;
 
-    // 2. Se não encontrar no cookie, tenta header Authorization: Bearer <token>
+    // 2. Token via Authorization header
     if (!token && req.headers.authorization) {
       const authHeader = req.headers.authorization;
+
       if (authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7); // Remove "Bearer " do início
+        token = authHeader.substring(7);
       }
     }
 
-    // 3. Se ainda não tem token, retorna erro
+    // 3. Token obrigatório
     if (!token) {
-      return res.status(401).json({ error: 'Acesso negado. Token não fornecido.' });
+      return res.status(401).json({
+        error: 'Acesso negado. Token não fornecido.',
+      });
     }
 
-    // 4. Verifica se o token está na blocklist (logout)
+    // 4. Verifica blocklist (logout)
     if (authService.isTokenBlocked(token)) {
-      return res.status(401).json({ error: 'Token foi revogado (logout realizado).' });
+      return res.status(401).json({
+        error: 'Token foi revogado (logout realizado).',
+      });
     }
 
-    // 5. Verifica a validade do token
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string; perfil: string };
-    
-    // 6. Anexa as informações decodificadas no request
-    req.user = decoded;
-    
-    // 7. Segue para o próximo middleware/controller
+    // 5. Valida JWT
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      id: string;
+      email: string;
+      perfil: string;
+    };
+
+    // 6. Busca usuário no banco (OBRIGATÓRIO)
+    const user = await authService.getUserById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        error: 'Usuário não encontrado.',
+      });
+    }
+
+    // 7. BLOQUEIO DE USUÁRIO INATIVO (REGRA DE NEGÓCIO)
+    if (user.status !== 'Ativo') {
+      return res.status(403).json({
+        error: 'Usuário inativo. Acesso bloqueado.',
+      });
+    }
+
+    // 8. Injeta usuário no request
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      perfil: decoded.perfil,
+    };
+
+    // 9. Continua fluxo
     next();
   } catch (error) {
-    // Diferencia tipo de erro
+    // Token expirado
     if (error instanceof TokenExpiredError) {
-      return res.status(401).json({ error: 'Token expirado. Faça login novamente.' });
+      return res.status(401).json({
+        error: 'Token expirado. Faça login novamente.',
+      });
     }
-    
+
+    // Token inválido
     if (error instanceof JsonWebTokenError) {
-      return res.status(401).json({ error: 'Token inválido.' });
+      return res.status(401).json({
+        error: 'Token inválido.',
+      });
     }
-    
-    return res.status(401).json({ error: 'Erro na autenticação.' });
+
+    // Erro genérico
+    return res.status(401).json({
+      error: 'Erro na autenticação.',
+    });
   }
 };
