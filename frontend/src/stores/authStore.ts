@@ -1,28 +1,31 @@
 import { create } from 'zustand'
 import type { Usuario } from '@/types'
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 
-const MOCK_USUARIOS: Usuario[] = [
-  { id: '3', nome: 'João da Silva Gestor', email: 'joao@prefeitura.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
-  { id: '3b', nome: 'Pedro Gestor', email: 'pedro@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
-  { id: '4', nome: 'Ana Oliveira', email: 'ana@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '2', status: 'Ativo', criadoEm: '2025-11-15T08:30:00Z' },
-  { id: '5', nome: 'Carlos Ferreira', email: 'carlos@compesa.pe.gov.br', perfil: 'Gestor', orgaoId: '3', status: 'Ativo', criadoEm: '2025-10-20T11:45:00Z' },
-  { id: '6', nome: 'Admin Sistema', email: 'admin@recife.pe.gov.br', perfil: 'Admin', status: 'Ativo', criadoEm: '2025-09-01T00:00:00Z' },
-]
-
-function mapUsuario(data: any): Usuario {
+function mapUsuario(data: Record<string, unknown>): Usuario {
   const perfilMap: Record<string, 'Cidadão' | 'Gestor' | 'Admin'> = {
     Cidadao: 'Cidadão',
+    Cidadão: 'Cidadão',
+    citizen: 'Cidadão',
     Gestor: 'Gestor',
+    gestor: 'Gestor',
     Admin: 'Admin',
+    admin: 'Admin',
   }
+  const rawPerfil = (data.perfil ?? data.role ?? 'Cidadao') as string
+  const criadoEm =
+    (data.criadoem as string) ??
+    (data.criadoEm as string) ??
+    (data.created_at as string) ??
+    new Date().toISOString()
+
   return {
-    id: data.id,
-    nome: data.nome,
-    email: data.email,
-    perfil: perfilMap[data.perfil] ?? data.perfil,
-    status: data.status ?? 'Ativo',
-    criadoEm: data.criadoem ?? data.criadoEm ?? new Date().toISOString(),
+    id: String(data.id),
+    nome: String(data.nome ?? data.name ?? ''),
+    email: String(data.email ?? ''),
+    perfil: perfilMap[rawPerfil] ?? 'Cidadão',
+    status: (data.status as 'Ativo' | 'Inativo') ?? 'Ativo',
+    criadoEm,
   }
 }
 
@@ -30,6 +33,7 @@ interface AuthState {
   usuario: Usuario | null
   isAuthenticated: boolean
   isLoading: boolean
+  sessionChecked: boolean
   error: string | null
 
   register: (nome: string, email: string, senha: string) => Promise<void>
@@ -43,6 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   usuario: null,
   isAuthenticated: false,
   isLoading: false,
+  sessionChecked: false,
   error: null,
 
   register: async (nome: string, email: string, senha: string) => {
@@ -60,23 +65,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, senha: string) => {
     set({ isLoading: true, error: null })
     try {
-      // Try real backend first (Cidadao)
-      try {
-        const { data } = await api.post('/auth/login', { email, senha })
-        set({ usuario: mapUsuario(data), isAuthenticated: true, isLoading: false })
-        return
-      } catch {
-        // Fall through to mock for Gestor/Admin
-      }
-
-      // Fallback: mock users for Gestor and Admin
-      const mock = MOCK_USUARIOS.find((u) => u.email === email)
-      if (!mock || senha !== '123456') {
-        throw new Error('E-mail ou senha incorretos')
-      }
-      set({ usuario: mock, isAuthenticated: true, isLoading: false })
+      const { data } = await api.post('/auth/login', { email, senha })
+      set({
+        usuario: mapUsuario(data),
+        isAuthenticated: true,
+        isLoading: false,
+        sessionChecked: true,
+      })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro ao fazer login'
+      const message =
+        error instanceof ApiError && error.statusCode === 401
+          ? 'E-mail ou senha incorretos'
+          : error instanceof Error
+            ? error.message
+            : 'Erro ao fazer login'
       set({ usuario: null, isAuthenticated: false, error: message, isLoading: false })
       throw new Error(message)
     }
@@ -86,7 +88,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await api.post('/auth/logout')
     } catch {
-      // ignore
+      // 401 or network errors — still clear local session
     } finally {
       set({ usuario: null, isAuthenticated: false, error: null })
     }
@@ -96,13 +98,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true })
     try {
       const { data } = await api.get('/auth/me')
-      set({ usuario: mapUsuario(data), isAuthenticated: true, isLoading: false })
+      set({
+        usuario: mapUsuario(data),
+        isAuthenticated: true,
+        isLoading: false,
+        sessionChecked: true,
+      })
     } catch {
-      set({ usuario: null, isAuthenticated: false, isLoading: false })
+      set({
+        usuario: null,
+        isAuthenticated: false,
+        isLoading: false,
+        sessionChecked: true,
+      })
     }
   },
 
   setUsuario: (usuario: Usuario | null) => {
-    set({ usuario })
+    set({ usuario, isAuthenticated: usuario !== null })
   },
 }))

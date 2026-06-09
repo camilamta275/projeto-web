@@ -16,16 +16,16 @@ const bottomNavItems = [
 
 export default function CidadaoLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const { usuario, isLoading } = useAuthStore()
+  const { usuario, isLoading, sessionChecked } = useAuthStore()
   const [isDesktop] = useMediaQuery('(min-width: 768px)')
 
   React.useEffect(() => {
-    if (!isLoading && (!usuario || usuario.perfil !== 'Cidadão')) {
+    if (sessionChecked && !isLoading && (!usuario || usuario.perfil !== 'Cidadão')) {
       router.push('/login')
     }
-  }, [usuario, isLoading, router])
+  }, [usuario, isLoading, sessionChecked, router])
 
-  if (isLoading) {
+  if (!sessionChecked || isLoading) {
     return null
   }
 

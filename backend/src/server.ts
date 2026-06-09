@@ -21,6 +21,11 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser()); // ESSENCIAL PARA LER OS COOKIES DO JWT!
 
+// Health check (público — use para verificar se o servidor está no ar)
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Rotas
 app.use('/auth', authRoutes);
 app.use('/gestor', gestorRoutes);
@@ -32,6 +37,18 @@ app.use('/admin', adminRoutes);
 // Middleware de tratamento de erros (DEVE SER O ÚLTIMO)
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+});
+
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\nERRO: a porta ${PORT} já está em uso.`);
+    console.error('Encerre o processo anterior e tente novamente.');
+    console.error('PowerShell: Get-NetTCPConnection -LocalPort 3000 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n');
+    process.exit(1);
+  }
+  console.error('Erro ao iniciar servidor:', err);
+  process.exit(1);
 });
