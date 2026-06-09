@@ -8,10 +8,13 @@ import {
   FormLabel,
   Input,
   VStack,
+  HStack,
   Heading,
   Text,
   useToast,
   FormErrorMessage,
+  Divider,
+  Badge,
   Link,
 } from '@chakra-ui/react'
 import { useForm } from '@/hooks'
@@ -20,8 +23,14 @@ import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
 import NextLink from 'next/link'
 
+const DEMO_USERS = [
+  { email: 'joao@example.com', nome: 'João Silva', perfil: 'Cidadão', color: 'blue' },
+  { email: 'joao@prefeitura.gov.br', nome: 'João da Silva Gestor', perfil: 'Gestor', color: 'green' },
+  { email: 'admin@recife.pe.gov.br', nome: 'Admin Sistema', perfil: 'Admin', color: 'purple' },
+] as const
+
 export function LoginForm() {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm({
     schema: loginSchema,
   })
   const { login } = useAuthStore()
@@ -47,6 +56,11 @@ export function LoginForm() {
         isClosable: true,
       })
     }
+  }
+
+  const fillDemo = (email: string) => {
+    setValue('email', email)
+    setValue('password', '123456')
   }
 
   return (
@@ -77,7 +91,7 @@ export function LoginForm() {
               <FormLabel>Senha</FormLabel>
               <Input
                 type="password"
-                placeholder="Sua senha"
+                placeholder="qualquer senha"
                 {...register('password')}
               />
               <FormErrorMessage>
@@ -96,6 +110,32 @@ export function LoginForm() {
             </Button>
           </VStack>
         </form>
+
+        <Box width="100%">
+          <HStack mb={3}>
+            <Divider />
+            <Text fontSize="xs" color="gray.400" whiteSpace="nowrap">Usuários de teste</Text>
+            <Divider />
+          </HStack>
+          <VStack spacing={2}>
+            {DEMO_USERS.map((u) => (
+              <Button
+                key={u.email}
+                width="100%"
+                variant="outline"
+                size="sm"
+                onClick={() => fillDemo(u.email)}
+                justifyContent="space-between"
+              >
+                <Text fontSize="xs" noOfLines={1}>{u.email}</Text>
+                <Badge colorScheme={u.color} ml={2} flexShrink={0}>{u.perfil}</Badge>
+              </Button>
+            ))}
+          </VStack>
+          <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
+            Clique para preencher automaticamente (senha: 123456)
+          </Text>
+        </Box>
 
         <Text fontSize="sm" color="gray.500">
           Não tem uma conta?{' '}

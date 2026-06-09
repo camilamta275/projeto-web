@@ -2,6 +2,19 @@ import { create } from 'zustand'
 import type { Usuario } from '@/types'
 import { api, ApiError } from '@/lib/api'
 
+const MOCK_SESSION_KEY = 'fiscalize_mock_user'
+
+const MOCK_USUARIOS: Usuario[] = [
+  { id: '1', nome: 'João Silva', email: 'joao@example.com', perfil: 'Cidadão', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
+  { id: '3', nome: 'João da Silva Gestor', email: 'joao@prefeitura.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
+  { id: '3b', nome: 'Pedro Gestor', email: 'pedro@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
+  { id: '4', nome: 'Ana Oliveira', email: 'ana@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '2', status: 'Ativo', criadoEm: '2025-11-15T08:30:00Z' },
+  { id: '5', nome: 'Carlos Ferreira', email: 'carlos@compesa.pe.gov.br', perfil: 'Gestor', orgaoId: '3', status: 'Ativo', criadoEm: '2025-10-20T11:45:00Z' },
+  { id: '6', nome: 'Admin Sistema', email: 'admin@recife.pe.gov.br', perfil: 'Admin', status: 'Ativo', criadoEm: '2025-09-01T00:00:00Z' },
+]
+
+const MOCK_PASSWORD = '123456'
+
 function mapUsuario(data: Record<string, unknown>): Usuario {
   const perfilMap: Record<string, 'Cidadão' | 'Gestor' | 'Admin'> = {
     Cidadao: 'Cidadão',
@@ -26,6 +39,29 @@ function mapUsuario(data: Record<string, unknown>): Usuario {
     perfil: perfilMap[rawPerfil] ?? 'Cidadão',
     status: (data.status as 'Ativo' | 'Inativo') ?? 'Ativo',
     criadoEm,
+  }
+}
+
+function saveMockSession(usuario: Usuario) {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(usuario))
+  }
+}
+
+function loadMockSession(): Usuario | null {
+  if (typeof window === 'undefined') return null
+  const stored = sessionStorage.getItem(MOCK_SESSION_KEY)
+  if (!stored) return null
+  try {
+    return JSON.parse(stored) as Usuario
+  } catch {
+    return null
+  }
+}
+
+function clearMockSession() {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(MOCK_SESSION_KEY)
   }
 }
 
@@ -65,9 +101,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, senha: string) => {
     set({ isLoading: true, error: null })
     try {
-      const { data } = await api.post('/auth/login', { email, senha })
+      // Tenta backend real primeiro (contas registradas)
+      try {
+        const { data } = await api.post('/auth/login', { email, senha })
+        clearMockSession()
+        set({
+          usuario: mapUsuario(data),
+          isAuthenticated: true,
+          isLoading: false,
+          sessionChecked: true,
+        })
+        return
+      } catch {
+        // Continua para usuários de teste (Gestor/Admin/Cidadão mock)
+      }
+
+      const mock = MOCK_USUARIOS.find((u) => u.email === email)
+      if (!mock || senha !== MOCK_PASSWORD) {
+        throw new ApiError('E-mail ou senha incorretos', 401)
+      }
+
+      saveMockSession(mock)
       set({
-        usuario: mapUsuario(data),
+        usuario: mock,
         isAuthenticated: true,
         isLoading: false,
         sessionChecked: true,
@@ -85,10 +141,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    clearMockSession()
     try {
       await api.post('/auth/logout')
     } catch {
-      // 401 or network errors — still clear local session
+      // ignora — sessão mock ou token já inválido
     } finally {
       set({ usuario: null, isAuthenticated: false, error: null })
     }
@@ -98,6 +155,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true })
     try {
       const { data } = await api.get('/auth/me')
+      clearMockSession()
       set({
         usuario: mapUsuario(data),
         isAuthenticated: true,
@@ -105,12 +163,22 @@ export const useAuthStore = create<AuthState>((set) => ({
         sessionChecked: true,
       })
     } catch {
-      set({
-        usuario: null,
-        isAuthenticated: false,
-        isLoading: false,
-        sessionChecked: true,
-      })
+      const mock = loadMockSession()
+      if (mock) {
+        set({
+          usuario: mock,
+          isAuthenticated: true,
+          isLoading: false,
+          sessionChecked: true,
+        })
+      } else {
+        set({
+          usuario: null,
+          isAuthenticated: false,
+          isLoading: false,
+          sessionChecked: true,
+        })
+      }
     }
   },
 
