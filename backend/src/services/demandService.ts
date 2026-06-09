@@ -41,6 +41,19 @@ function generateProtocolo(): string {
   return `DEM-${date}-${rand}`;
 }
 
+async function resolveOrgan(categoryId: number): Promise<string | null> {
+  const rule = await prisma.routing_rules.findFirst({
+    where: { category_id: categoryId, active: true },
+  });
+
+  if (!rule) {
+    console.warn(`[ROUTING] No active rule found for category_id: ${categoryId}`);
+    return null;
+  }
+
+  return rule.organ_id;
+}
+
 export const demandService = {
   async list(input: ListDemandsInput) {
     const { userId, perfil, status, categoria, regiao, page, limit } = input;
@@ -265,35 +278,14 @@ export const demandService = {
       throw new AppError(403, 'Usuário não possui perfil de cidadão para registrar demandas.');
     }
 
-    // 3. Resolve orgaoid, prioridade, slahoras from regra_competencia or fallbacks
-    const regra = await prisma.regra_competencia.findFirst({
-      where: { categoriaid: categoryId, subcategoria: title },
-    });
-
-    let orgaoid: string;
+    // 3. Resolve orgaoid from routing_rules
+    const orgaoid = await resolveOrgan(categoryId);
     let prioridade: 'Baixa' | 'M_dia' | 'Alta' | 'Cr_tica' = 'M_dia';
     let slahoras = 48;
 
-    if (regra) {
-      orgaoid = regra.orgaoprincipalid;
-      prioridade = regra.prioridade;
-      slahoras = regra.slahoras;
-    } else {
-      const orgaoCategoria = await prisma.orgao_categoria.findFirst({
-        where: { categoriaid: categoryId },
-        include: { orgao: true },
-      });
-      if (orgaoCategoria) {
-        orgaoid = orgaoCategoria.orgaoid;
-        slahoras = orgaoCategoria.orgao.slahoras;
-      } else {
-        const orgao = await prisma.orgao.findFirst({ where: { status: 'Ativo' } });
-        if (!orgao) {
-          throw new AppError(500, 'Nenhum órgão responsável encontrado no sistema.');
-        }
-        orgaoid = orgao.id;
-        slahoras = orgao.slahoras;
-      }
+    if (orgaoid) {
+      const orgao = await prisma.orgao.findUnique({ where: { id: orgaoid } });
+      if (orgao) slahoras = orgao.slahoras;
     }
 
     const protocolo = generateProtocolo();

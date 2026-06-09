@@ -1,4 +1,6 @@
+import { Prisma } from '@prisma/client';
 import { organRepository } from '../repositories/organRepository';
+import { auditLogService, AuditActions } from './auditLogService';
 
 interface CriarOrgaoDTO {
     id: string;
@@ -54,7 +56,7 @@ export const organService = {
         }
     },
 
-    async criarOrgao(dados: CriarOrgaoDTO) {
+    async criarOrgao(dados: CriarOrgaoDTO, adminId: string) {
         // Validar campos obrigatórios
         this.validarCamposObrigatorios(dados);
 
@@ -101,6 +103,15 @@ export const organService = {
 
             // Retornar órgão com categorias
             const orgaoComCategorias = await organRepository.obterOrgaoPorId(orgao.id);
+
+            await auditLogService.log(
+                AuditActions.ORGAN_CREATED,
+                'organ',
+                orgao.id,
+                adminId,
+                { nome: dados.nome, sigla: dados.sigla, categorias: dados.categorias },
+            );
+
             return orgaoComCategorias;
         } catch (error) {
             throw error;
@@ -123,7 +134,7 @@ export const organService = {
         }));
     },
 
-    async editarOrgao(id: string, dados: EditarOrgaoDTO) {
+    async editarOrgao(id: string, dados: EditarOrgaoDTO, adminId: string) {
         // Verifica se o órgão existe
         const orgaoExistente = await organRepository.obterOrgaoPorId(id);
         if (!orgaoExistente) {
@@ -164,7 +175,7 @@ export const organService = {
             throw new Error('Órgão não encontrado');
         }
 
-        return {
+        const result = {
             id: orgao.id,
             sigla: orgao.sigla,
             nome: orgao.nome,
@@ -178,6 +189,16 @@ export const organService = {
                 oc => oc.categoria.nome
             ),
         };
+
+        await auditLogService.log(
+            AuditActions.ORGAN_EDITED,
+            'organ',
+            id,
+            adminId,
+            { changes: dados } as unknown as Prisma.InputJsonValue,
+        );
+
+        return result;
     },
 
     async editarStatus(id: string, status: 'inativo' | 'ativo') {

@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma';
 import { AppError } from '../middlewares/errorMiddleware';
 import bcrypt from 'bcrypt';
 import { perfil } from '@prisma/client';
+import { auditLogService, AuditActions } from './auditLogService';
 
 export const adminService = {
   async activateUser(userId: string, adminId: string) {
@@ -19,7 +20,7 @@ export const adminService = {
       throw new AppError(409, 'Usuário já está ativo.');
     }
 
-    return prisma.usuario.update({
+    const updated = await prisma.usuario.update({
       where: { id: userId },
       data: { status: 'Ativo' },
       select: {
@@ -31,6 +32,16 @@ export const adminService = {
         criadoem: true,
       },
     });
+
+    await auditLogService.log(
+      AuditActions.USER_ACTIVATED,
+      'user',
+      userId,
+      adminId,
+      { previous_status: usuario.status },
+    );
+
+    return updated;
   },
 
   async deactivateUser(userId: string, adminId: string) {
@@ -52,7 +63,7 @@ export const adminService = {
       throw new AppError(409, 'Usuário já está inativo.');
     }
 
-    return prisma.usuario.update({
+    const updated = await prisma.usuario.update({
       where: { id: userId },
       data: { status: 'Inativo' },
       select: {
@@ -64,6 +75,16 @@ export const adminService = {
         criadoem: true,
       },
     });
+
+    await auditLogService.log(
+      AuditActions.USER_DEACTIVATED,
+      'user',
+      userId,
+      adminId,
+      { previous_status: usuario.status },
+    );
+
+    return updated;
   },
 
   async listUsers(page: number, limit: number, role?: string, status?: string) {
@@ -133,14 +154,13 @@ export const adminService = {
       },
     });
 
-    await prisma.usuario_audit.create({
-      data: {
-        usuarioid: userId,
-        acao: 'ROLE_UPDATED',
-        dadosantigos: { perfil: usuario.perfil },
-        dadosnovos: { perfil: role },
-      },
-    });
+    await auditLogService.log(
+      AuditActions.ROLE_CHANGE,
+      'user',
+      userId,
+      adminId,
+      { before: { perfil: usuario.perfil }, after: { perfil: role } },
+    );
 
     return atualizado;
   },

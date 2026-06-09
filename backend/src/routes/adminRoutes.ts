@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { organController } from '../controllers/organController';
 import { adminController } from '../controllers/adminController';
+import { routingRuleController } from '../controllers/routingRuleController';
 import { authenticate } from '../middlewares/authMiddleware';
 import { requireRole } from '../middlewares/requireRole';
 
@@ -77,6 +78,35 @@ router.post(
   '/users',
   requireRole(['Admin']),
   adminController.criarUsuario
+);
+
+/* =========================
+   ROUTING RULES
+========================= */
+
+// POST /admin/routing-rules
+router.post(
+  '/routing-rules',
+  requireRole(['Admin']),
+  routingRuleController.create
+);
+
+// PUT /admin/routing-rules/:id
+router.put(
+  '/routing-rules/:id',
+  requireRole(['Admin']),
+  routingRuleController.update
+);
+
+/* =========================
+   AUDIT LOGS
+========================= */
+
+// GET /admin/audit-logs
+router.get(
+  '/audit-logs',
+  requireRole(['Admin']),
+  adminController.listarAuditLogs
 );
 
 export default router;

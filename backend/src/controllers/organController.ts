@@ -8,6 +8,8 @@ export const organController = {
         try {
             const { id, nome, sigla, tipo, slahoras, responsavel, email, telefone, categorias } = req.body;
 
+            const adminId = req.user!.id;
+
             const orgao = await service.criarOrgao({
                 id,
                 nome,
@@ -18,7 +20,7 @@ export const organController = {
                 email,
                 telefone,
                 categorias,
-            });
+            }, adminId);
 
             return res.status(201).json({
                 mensagem: 'Órgão cadastrado com sucesso',
@@ -57,6 +59,8 @@ export const organController = {
             const id = req.params.id as string;
             const { nome, tipo, slahoras, responsavel, email, telefone, categorias } = req.body;
 
+            const adminId = req.user!.id;
+
             const orgao = await service.editarOrgao(id, {
                 nome,
                 tipo,
@@ -65,7 +69,7 @@ export const organController = {
                 email,
                 telefone,
                 categorias,
-            });
+            }, adminId);
 
             return res.status(200).json(orgao);
         } catch (error) {

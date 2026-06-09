@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { adminService } from '../services/adminService';
+import { auditLogService } from '../services/auditLogService';
 
 export const adminController = {
   async listarUsuarios(
@@ -125,6 +126,38 @@ export const adminController = {
       );
 
       return res.status(200).json(usuario);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listarAuditLogs(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 20;
+
+      const action =
+        typeof req.query.action === 'string'
+          ? req.query.action
+          : undefined;
+
+      const admin_id =
+        typeof req.query.admin_id === 'string'
+          ? req.query.admin_id
+          : undefined;
+
+      const result = await auditLogService.findAll({
+        action,
+        admin_id,
+        page,
+        limit,
+      });
+
+      return res.status(200).json(result);
     } catch (error) {
       next(error);
     }
