@@ -10,5 +10,6 @@ router.use(requireRole(['Gestor']));
 
 router.get('/total-demands', metricsController.totalDemands);
 router.get('/demands-by-category', metricsController.demandsByCategory);
+router.get('/average-response-time', metricsController.averageResponseTime);
 
 export default router;

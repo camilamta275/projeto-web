@@ -1,6 +1,23 @@
 import { prisma } from '../config/prisma';
 
 export const metricsRepository = {
+  async averageResponseTime(where: { gestorid?: string }) {
+    return prisma.chamado.findMany({
+      where: {
+        ...where,
+        status: { in: ['Resolvido', 'Fechado'] },
+      },
+      select: {
+        criadoem: true,
+        timeline_event: {
+          where: { tipo: 'status' },
+          orderBy: { timestamp: 'asc' },
+          select: { timestamp: true, dadosnovos: true },
+        },
+      },
+    });
+  },
+
   async demandsByCategory(where: { gestorid?: string }) {
     const [categorias, grupos] = await Promise.all([
       prisma.categoria.findMany({ select: { id: true, nome: true } }),

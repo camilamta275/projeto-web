@@ -355,6 +355,52 @@ async function seed() {
     console.log(`  └─ Resolvidos: 2`)
     console.log(`  └─ Fechados: 1`)
 
+    // ----------------------------------------------------------
+    // 7. Timeline events para chamados resolvidos/fechados
+    //    (necessário para /metrics/average-response-time)
+    // ----------------------------------------------------------
+    const resolucoes = [
+      { protocolo: 'DEM-SEED-006', horasAteResolucao: 24 },
+      { protocolo: 'DEM-SEED-007', horasAteResolucao: 48 },
+      { protocolo: 'DEM-SEED-008', horasAteResolucao: 12 },
+    ]
+
+    for (const item of resolucoes) {
+      const chamado = await prisma.chamado.findUnique({
+        where: { protocolo: item.protocolo },
+        select: { id: true, criadoem: true },
+      })
+
+      if (!chamado) continue
+
+      const jaTemEvento = await prisma.timeline_event.findFirst({
+        where: { chamadoid: chamado.id, tipo: 'status' },
+      })
+
+      if (!jaTemEvento) {
+        const timestampResolucao = new Date(
+          chamado.criadoem.getTime() + item.horasAteResolucao * 60 * 60 * 1000
+        )
+
+        await prisma.timeline_event.create({
+          data: {
+            chamadoid: chamado.id,
+            tipo: 'status',
+            titulo: 'Status atualizado',
+            descricao: `Status alterado para ${item.protocolo === 'DEM-SEED-008' ? 'Fechado' : 'Resolvido'}`,
+            autor: 'Gestor Teste',
+            timestamp: timestampResolucao,
+            dadosantigos: { status: 'Em_Andamento' },
+            dadosnovos: { status: item.protocolo === 'DEM-SEED-008' ? 'Fechado' : 'Resolvido' },
+          },
+        })
+      }
+    }
+    console.log(`✓ Timeline events criados para chamados resolvidos/fechados`)
+    console.log(`  └─ DEM-SEED-006: resolvido em 24h`)
+    console.log(`  └─ DEM-SEED-007: resolvido em 48h`)
+    console.log(`  └─ DEM-SEED-008: encerrado em 12h`)
+
     console.log('\n✅ Seed completado com sucesso!')
     console.log('\n📝 Credenciais de teste:')
     console.log(`   Admin   → ${adminEmail} / ${adminPassword}`)
