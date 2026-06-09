@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import {
   Box, Container, VStack, HStack, Heading, Text, SimpleGrid, Card, CardBody,
   Table, Thead, Tbody, Tr, Th, Td, Badge, Button, Input, InputGroup,
-  InputLeftElement, Avatar, Spinner, IconButton, Menu, MenuButton, 
+  InputLeftElement, Avatar, Spinner, IconButton, Menu, MenuButton,
   MenuList, MenuItem, useDisclosure,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton,
   Select,
@@ -16,7 +16,7 @@ import { useGestorStore } from '@/stores/gestorStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTicketStore } from '@/stores/ticketStore'
 
-const Heatmap = dynamic(() => import('@/components/Heatmap'), { 
+const Heatmap = dynamic(() => import('@/components/Heatmap'), {
   ssr: false,
   loading: () => (
     <Box height="300px" display="flex" alignItems="center" justifyContent="center" bg="gray.100">
@@ -26,48 +26,35 @@ const Heatmap = dynamic(() => import('@/components/Heatmap'), {
   )
 })
 
-const graficoData = [
-  { categoria: 'Via', sla: 85, color: '#22c55e' },
-  { categoria: 'Água', sla: 72, color: '#eab308' },
-  { categoria: 'Energia', sla: 58, color: '#ef4444' },
-  { categoria: 'Saneamento', sla: 92, color: '#22c55e' },
-  { categoria: 'Trânsito', sla: 68, color: '#eab308' },
-]
-
 export default function GestorDashboardPage() {
   const { usuario } = useAuthStore()
   const { metricas, loading: gestorLoading, fetchMetricas } = useGestorStore()
   const { filteredTickets, fetchTickets, isLoading: ticketsLoading, setFilters, filters } = useTicketStore()
 
-  // --- ESTADO LOCAL PARA FILTRO DE SLA ---
   const [slaFilter, setSlaFilter] = useState<'todos' | 'vencidos' | 'no_prazo'>('todos')
   const [selectedProtocolo, setSelectedProtocolo] = useState<any | null>(null)
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   useEffect(() => {
-    //fetchTickets()
-    if (usuario?.orgaoId) fetchMetricas(usuario.orgaoId)
-  }, [usuario?.orgaoId, fetchMetricas, fetchTickets])
+    if (usuario) fetchMetricas(usuario.orgaoId ?? '')
+  }, [usuario?.id, fetchMetricas])
 
-  // ✅ CÁLCULO DE SLA REAL E FILTRAGEM EXTRA
   const alertasProcessados = useMemo(() => {
     const agora = new Date().getTime()
-    
-    // Primeiro, calcula o SLA para todos os tickets filtrados pela store (busca/status)
+
     const comSla = filteredTickets.map(t => {
       const deadline = t.slaDeadline ? new Date(t.slaDeadline).getTime() : agora
       const diffHoras = Math.floor((deadline - agora) / 3600000)
       return { ...t, slaRestante: diffHoras }
     })
 
-    // Segundo, aplica o filtro de SLA local (Vencidos vs No Prazo)
     if (slaFilter === 'vencidos') return comSla.filter(a => a.slaRestante < 0)
     if (slaFilter === 'no_prazo') return comSla.filter(a => a.slaRestante >= 0)
-    
+
     return comSla
   }, [filteredTickets, slaFilter])
 
-  const alertasVencidosParaNotificacao = useMemo(() => 
+  const alertasVencidosParaNotificacao = useMemo(() =>
     alertasProcessados.filter(a => a.slaRestante < 0), [alertasProcessados]
   )
 
@@ -77,6 +64,17 @@ export default function GestorDashboardPage() {
       .map(t => [t.latitude, t.longitude, 1.0])
   }, [alertasProcessados])
 
+  const graficoData = useMemo(() =>
+    (metricas?.demandasPorCategoria || [])
+      .filter(d => d.total > 0)
+      .map((d, i) => ({
+        categoria: d.category,
+        total: d.total,
+        color: ['#22c55e', '#eab308', '#ef4444', '#3b82f6', '#8b5cf6', '#06b6d4'][i % 6],
+      })),
+    [metricas?.demandasPorCategoria]
+  )
+
   const handleActionVerSLA = (alerta: any) => {
     setSelectedProtocolo(alerta)
     onOpen()
@@ -84,9 +82,9 @@ export default function GestorDashboardPage() {
 
   const kpis = [
     { label: 'Total Filtrado', value: alertasProcessados.length, icon: '📋', color: 'blue', bgColor: 'blue.50' },
-    { label: 'Em Aberto', value: metricas?.chamadosAbertos || 0, icon: '📭', color: 'orange', bgColor: 'orange.50' },
+    { label: 'Em Aberto', value: metricas?.chamadosAbertos ?? 0, icon: '📭', color: 'orange', bgColor: 'orange.50' },
     { label: 'SLA Encerrado', value: alertasVencidosParaNotificacao.length, icon: '⚠️', color: 'red', bgColor: 'red.50' },
-    { label: 'Concluídos', value: 132, change: 8, icon: '✅', color: 'green', bgColor: 'green.50' },
+    { label: 'Concluídos', value: metricas?.chamadosEncerrados ?? 0, change: 8, icon: '✅', color: 'green', bgColor: 'green.50' },
   ]
 
   if (gestorLoading || ticketsLoading) return <Box display="flex" justifyContent="center" py={20}><Spinner size="xl" /></Box>
@@ -100,15 +98,15 @@ export default function GestorDashboardPage() {
           <HStack spacing={4}>
             <InputGroup maxW="300px">
               <InputLeftElement><SearchIcon color="gray.400" /></InputLeftElement>
-              <Input 
-                placeholder="Buscar protocolo..." 
-                size="sm" 
+              <Input
+                placeholder="Buscar protocolo..."
+                size="sm"
                 value={filters.search || ''}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                 borderRadius="md"
               />
             </InputGroup>
-            
+
             <Menu>
               <MenuButton as={Box} position="relative" cursor="pointer">
                 <IconButton aria-label="Notificações" icon={<BellIcon />} variant="ghost" />
@@ -135,7 +133,7 @@ export default function GestorDashboardPage() {
 
       <Container maxW="100%" py={6}>
         <VStack spacing={6} align="stretch">
-          
+
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
             {kpis.map((kpi, idx) => (
               <Card key={idx} bg={kpi.bgColor} border="1px solid" borderColor={`${kpi.color}.100`}>
@@ -157,15 +155,15 @@ export default function GestorDashboardPage() {
 
           <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
             <Card><CardBody>
-              <Heading size="sm" mb={4}>📊 SLA por Categoria</Heading>
+              <Heading size="sm" mb={4}>📊 Demandas por Categoria</Heading>
               <Box height="300px">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={graficoData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="categoria" fontSize={12} />
-                    <YAxis domain={[0, 100]} fontSize={12} />
-                    <Tooltip cursor={{fill: 'transparent'}} />
-                    <Bar dataKey="sla" radius={[4, 4, 0, 0]}>
+                    <YAxis allowDecimals={false} fontSize={12} />
+                    <Tooltip formatter={(v) => [`${v} demandas`, 'Total']} cursor={{fill: 'transparent'}} />
+                    <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                       {graficoData.map((e, i) => <Cell key={i} fill={e.color} />)}
                     </Bar>
                   </BarChart>
@@ -186,10 +184,10 @@ export default function GestorDashboardPage() {
               <HStack justify="space-between" mb={4}>
                 <HStack spacing={4}>
                   <Heading size="sm">🚨 Fila de Atendimento</Heading>
-                  <Select 
-                    size="xs" 
-                    width="150px" 
-                    value={slaFilter} 
+                  <Select
+                    size="xs"
+                    width="150px"
+                    value={slaFilter}
                     onChange={(e) => setSlaFilter(e.target.value as any)}
                     borderRadius="md"
                   >
@@ -200,7 +198,7 @@ export default function GestorDashboardPage() {
                 </HStack>
                 <Badge colorScheme="red">{alertasProcessados.length} chamados</Badge>
               </HStack>
-              
+
               <Box overflowX="auto">
                 <Table size="sm" variant="simple">
                   <Thead bg="gray.50">
@@ -236,7 +234,6 @@ export default function GestorDashboardPage() {
         </VStack>
       </Container>
 
-      {/* Modal de Detalhes */}
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
         <ModalContent>
@@ -247,8 +244,8 @@ export default function GestorDashboardPage() {
               <Box p={4} bg={selectedProtocolo?.slaRestante < 0 ? "red.50" : "green.50"} borderRadius="md">
                 <Text fontSize="xs" fontWeight="bold">SITUAÇÃO ATUAL</Text>
                 <Heading size="md" color={selectedProtocolo?.slaRestante < 0 ? "red.600" : "green.600"}>
-                  {selectedProtocolo?.slaRestante < 0 
-                    ? `Atrasado em ${Math.abs(selectedProtocolo.slaRestante)} horas` 
+                  {selectedProtocolo?.slaRestante < 0
+                    ? `Atrasado em ${Math.abs(selectedProtocolo.slaRestante)} horas`
                     : `Dentro do prazo (${selectedProtocolo?.slaRestante}h)`}
                 </Heading>
               </Box>

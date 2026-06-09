@@ -16,8 +16,6 @@ const CATEGORIAS = [
   { nome: 'Outros Problemas', descricao: 'Outros problemas urbanos não listados acima' },
 ]
 
-// Corrigido: usando o enum tipo_orgao do Prisma
-// "Concessionária" no Prisma vira "Concession_ria" por causa do acento
 const ORGAOS: {
   id: string
   nome: string
@@ -55,7 +53,7 @@ const ORGAOS: {
       id: 'CELPE',
       nome: 'Companhia Energética de Pernambuco',
       sigla: 'CELPE',
-      tipo: 'Concession_ria', // enum gerado pelo Prisma para "Concessionária"
+      tipo: 'Concession_ria',
       slahoras: 24,
       responsavel: 'Central de Atendimento CELPE',
       email: 'atendimento@celpe.com.br',
@@ -97,17 +95,20 @@ const ORGAOS: {
     },
   ]
 
+// IDs fixos para garantir idempotência nas re-execuções
+const GESTOR_ID = '11111111-1111-1111-1111-111111111111'
+const CIDADAO_ID = '22222222-2222-2222-2222-222222222222'
+
 // =============================================================
 // SEED
 // =============================================================
 
 async function seed() {
-  console.log('🌱 Iniciando seed do banco de dados...\n');
+  console.log('🌱 Iniciando seed do banco de dados...\n')
 
-  // Variáveis de ambiente para criar admin
-  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@fiscalize.gov.br';
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin@123456';
-  const adminName = process.env.SEED_ADMIN_NAME || 'Administrador';
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@fiscalize.gov.br'
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin@123456'
+  const adminName = process.env.SEED_ADMIN_NAME || 'Administrador'
 
   try {
 
@@ -144,7 +145,6 @@ async function seed() {
         create: { ...orgaoData, status: 'Ativo' },
       })
 
-      // Corrigido: orgao_categoria (snake_case) em vez de orgaoCategoria
       await prisma.orgao_categoria.createMany({
         data: categorias.map(nome => ({
           orgaoid: orgaoData.id,
@@ -160,60 +160,259 @@ async function seed() {
     // ----------------------------------------------------------
     const adminExistente = await prisma.usuario.findUnique({
       where: { email: adminEmail },
-    });
+    })
 
-    if (adminExistente) {
+    if (!adminExistente) {
+      const senhaHash = await bcrypt.hash(adminPassword, 10)
+      const adminId = uuidv4()
+
+      const usuarioAdmin = await prisma.usuario.create({
+        data: {
+          id: adminId,
+          nome: adminName,
+          email: adminEmail,
+          senha: senhaHash,
+          perfil: 'Admin',
+          status: 'Ativo',
+        },
+      })
+
+      await prisma.admin.create({
+        data: {
+          id: adminId,
+          nivel_acesso: 'Super Admin',
+          permissao_escopo: 'Global',
+          ativo: true,
+        },
+      })
+
+      console.log(`✓ Admin criado: ${usuarioAdmin.email}`)
+    } else {
       console.log(`✓ Admin já existe: ${adminEmail}`)
-      return
     }
 
-    // 2. Hash da senha
-    const senhaHash = await bcrypt.hash(adminPassword, 10);
+    // ----------------------------------------------------------
+    // 4. Gestor de teste
+    // ----------------------------------------------------------
+    const gestorExistente = await prisma.usuario.findUnique({
+      where: { email: 'gestor@fiscalize.gov.br' },
+    })
 
-    // 3. Gerar UUID para o usuário
-    const adminId = uuidv4();
+    if (!gestorExistente) {
+      const senhaHash = await bcrypt.hash('Gestor@123456', 10)
 
-    // 4. Criar usuário admin
-    const usuarioAdmin = await prisma.usuario.create({
-      data: {
-        id: adminId,
-        nome: adminName,
-        email: adminEmail,
-        senha: senhaHash,
-        perfil: 'Admin',
-        status: 'Ativo',
+      await prisma.usuario.create({
+        data: {
+          id: GESTOR_ID,
+          nome: 'Gestor Teste',
+          email: 'gestor@fiscalize.gov.br',
+          senha: senhaHash,
+          perfil: 'Gestor',
+          status: 'Ativo',
+        },
+      })
+
+      await prisma.gestor.create({
+        data: {
+          id: GESTOR_ID,
+          orgaoid: 'EMLURB',
+          departamento: 'Manutenção Urbana',
+          telefone: '(81) 3355-8001',
+        },
+      })
+
+      console.log(`✓ Gestor de teste criado: gestor@fiscalize.gov.br`)
+    } else {
+      console.log(`✓ Gestor de teste já existe`)
+    }
+
+    // ----------------------------------------------------------
+    // 5. Cidadão de teste
+    // ----------------------------------------------------------
+    const cidadaoExistente = await prisma.usuario.findUnique({
+      where: { email: 'cidadao@fiscalize.gov.br' },
+    })
+
+    if (!cidadaoExistente) {
+      const senhaHash = await bcrypt.hash('Cidadao@123456', 10)
+
+      await prisma.usuario.create({
+        data: {
+          id: CIDADAO_ID,
+          nome: 'Cidadão Teste',
+          email: 'cidadao@fiscalize.gov.br',
+          senha: senhaHash,
+          perfil: 'Cidad_o',
+          status: 'Ativo',
+        },
+      })
+
+      await prisma.cidadao.create({
+        data: {
+          id: CIDADAO_ID,
+          cpf: '00000000000',
+          endereco: 'Rua do Teste, 123, Recife - PE',
+        },
+      })
+
+      console.log(`✓ Cidadão de teste criado: cidadao@fiscalize.gov.br`)
+    } else {
+      console.log(`✓ Cidadão de teste já existe`)
+    }
+
+    // ----------------------------------------------------------
+    // 6. Chamados de teste (breakdown por status)
+    // ----------------------------------------------------------
+    const infraId = catId('Infraestrutura')
+    const deadline = (horas: number) => new Date(Date.now() + horas * 60 * 60 * 1000)
+
+    const CHAMADOS_SAMPLE = [
+      {
+        protocolo: 'DEM-SEED-001',
+        descricao: 'Buraco grande na pista próximo ao cruzamento.',
+        status: 'Aberto' as const,
+        prioridade: 'Alta' as const,
+        gestorid: GESTOR_ID,
       },
-    });
-
-    console.log(`✓ Usuário Admin criado com sucesso!`);
-    console.log(`  └─ ID: ${usuarioAdmin.id}`);
-    console.log(`  └─ Email: ${usuarioAdmin.email}`);
-    console.log(`  └─ Perfil: ${usuarioAdmin.perfil}`);
-
-    // 5. Criar registro na tabela admin
-    const adminRecord = await prisma.admin.create({
-      data: {
-        id: adminId,
-        nivel_acesso: 'Super Admin',
-        permissao_escopo: 'Global',
-        ativo: true,
+      {
+        protocolo: 'DEM-SEED-002',
+        descricao: 'Calçada danificada causando risco de queda.',
+        status: 'Aberto' as const,
+        prioridade: 'M_dia' as const,
+        gestorid: GESTOR_ID,
       },
-    });
+      {
+        protocolo: 'DEM-SEED-003',
+        descricao: 'Pavimento desgastado em trecho de 50 metros.',
+        status: 'Aberto' as const,
+        prioridade: 'Baixa' as const,
+        gestorid: null,
+      },
+      {
+        protocolo: 'DEM-SEED-004',
+        descricao: 'Reparo de asfalto iniciado, aguardando conclusão.',
+        status: 'Em_Andamento' as const,
+        prioridade: 'Alta' as const,
+        gestorid: GESTOR_ID,
+      },
+      {
+        protocolo: 'DEM-SEED-005',
+        descricao: 'Substituição de meio-fio em andamento.',
+        status: 'Em_Andamento' as const,
+        prioridade: 'M_dia' as const,
+        gestorid: GESTOR_ID,
+      },
+      {
+        protocolo: 'DEM-SEED-006',
+        descricao: 'Buraco tampado com sucesso.',
+        status: 'Resolvido' as const,
+        prioridade: 'Alta' as const,
+        gestorid: GESTOR_ID,
+      },
+      {
+        protocolo: 'DEM-SEED-007',
+        descricao: 'Calçada reconstruída e liberada para uso.',
+        status: 'Resolvido' as const,
+        prioridade: 'M_dia' as const,
+        gestorid: GESTOR_ID,
+      },
+      {
+        protocolo: 'DEM-SEED-008',
+        descricao: 'Demanda encerrada após vistoria sem irregularidades.',
+        status: 'Fechado' as const,
+        prioridade: 'Baixa' as const,
+        gestorid: GESTOR_ID,
+      },
+    ]
 
-    console.log(`✓ Registro Admin criado com sucesso!`);
-    console.log(`  └─ Nível: ${adminRecord.nivel_acesso}`);
-    console.log(`  └─ Escopo: ${adminRecord.permissao_escopo}\n`);
+    let criados = 0
+    for (const chamado of CHAMADOS_SAMPLE) {
+      await prisma.chamado.upsert({
+        where: { protocolo: chamado.protocolo },
+        update: {},
+        create: {
+          protocolo: chamado.protocolo,
+          descricao: chamado.descricao,
+          cidadaoid: CIDADAO_ID,
+          gestorid: chamado.gestorid,
+          orgaoid: 'EMLURB',
+          categoriaid: infraId,
+          subcategoria: 'Pavimentação',
+          endereco: 'Av. Agamenon Magalhães, 1000, Recife - PE',
+          latitude: -8.0631,
+          longitude: -34.8711,
+          status: chamado.status,
+          prioridade: chamado.prioridade,
+          slahoras: 72,
+          sladeadline: deadline(72),
+        },
+      })
+      criados++
+    }
+    console.log(`✓ ${criados} chamados de teste criados/verificados`)
+    console.log(`  └─ Abertos: 3 (2 com gestor, 1 sem)`)
+    console.log(`  └─ Em andamento: 2`)
+    console.log(`  └─ Resolvidos: 2`)
+    console.log(`  └─ Fechados: 1`)
 
-    console.log('✅ Seed completado com sucesso!');
-    console.log('\n📝 Credenciais de teste:');
-    console.log(`   Email: ${adminEmail}`);
-    console.log(`   Senha: ${adminPassword}\n`);
+    // ----------------------------------------------------------
+    // 7. Timeline events para chamados resolvidos/fechados
+    //    (necessário para /metrics/average-response-time)
+    // ----------------------------------------------------------
+    const resolucoes = [
+      { protocolo: 'DEM-SEED-006', horasAteResolucao: 24 },
+      { protocolo: 'DEM-SEED-007', horasAteResolucao: 48 },
+      { protocolo: 'DEM-SEED-008', horasAteResolucao: 12 },
+    ]
+
+    for (const item of resolucoes) {
+      const chamado = await prisma.chamado.findUnique({
+        where: { protocolo: item.protocolo },
+        select: { id: true, criadoem: true },
+      })
+
+      if (!chamado) continue
+
+      const jaTemEvento = await prisma.timeline_event.findFirst({
+        where: { chamadoid: chamado.id, tipo: 'status' },
+      })
+
+      if (!jaTemEvento) {
+        const timestampResolucao = new Date(
+          chamado.criadoem.getTime() + item.horasAteResolucao * 60 * 60 * 1000
+        )
+
+        await prisma.timeline_event.create({
+          data: {
+            chamadoid: chamado.id,
+            tipo: 'status',
+            titulo: 'Status atualizado',
+            descricao: `Status alterado para ${item.protocolo === 'DEM-SEED-008' ? 'Fechado' : 'Resolvido'}`,
+            autor: 'Gestor Teste',
+            timestamp: timestampResolucao,
+            dadosantigos: { status: 'Em_Andamento' },
+            dadosnovos: { status: item.protocolo === 'DEM-SEED-008' ? 'Fechado' : 'Resolvido' },
+          },
+        })
+      }
+    }
+    console.log(`✓ Timeline events criados para chamados resolvidos/fechados`)
+    console.log(`  └─ DEM-SEED-006: resolvido em 24h`)
+    console.log(`  └─ DEM-SEED-007: resolvido em 48h`)
+    console.log(`  └─ DEM-SEED-008: encerrado em 12h`)
+
+    console.log('\n✅ Seed completado com sucesso!')
+    console.log('\n📝 Credenciais de teste:')
+    console.log(`   Admin   → ${adminEmail} / ${adminPassword}`)
+    console.log(`   Gestor  → gestor@fiscalize.gov.br / Gestor@123456`)
+    console.log(`   Cidadão → cidadao@fiscalize.gov.br / Cidadao@123456\n`)
+
   } catch (error) {
-    console.error('❌ Erro ao executar seed:', error);
-    throw error;
+    console.error('❌ Erro ao executar seed:', error)
+    throw error
   } finally {
-    await prisma.$disconnect();
+    await prisma.$disconnect()
   }
 }
 
-seed();
+seed()

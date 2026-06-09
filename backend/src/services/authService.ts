@@ -31,7 +31,7 @@ export const authService = {
           nome,
           email,
           senha: hashedPassword,
-          perfil: 'Cidadao',
+          perfil: 'Cidad_o',
           status: 'Ativo', // ✔ conforme schema.prisma
         },
       });
