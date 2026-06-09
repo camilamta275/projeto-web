@@ -37,7 +37,7 @@ export function LoginForm() {
   const router = useRouter()
   const toast = useToast()
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: { email: string; password: string }) => {
     try {
       await login(data.email, data.password)
       toast({
@@ -133,7 +133,7 @@ export function LoginForm() {
             ))}
           </VStack>
           <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
-            Clique para preencher automaticamente
+            Clique para preencher automaticamente (senha: 123456)
           </Text>
         </Box>
 
@@ -147,4 +147,3 @@ export function LoginForm() {
     </Box>
   )
 }
-

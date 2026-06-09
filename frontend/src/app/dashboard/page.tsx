@@ -7,10 +7,10 @@ import { Spinner, Box } from '@chakra-ui/react'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { usuario, isLoading } = useAuthStore()
+  const { usuario, isLoading, sessionChecked } = useAuthStore()
 
   React.useEffect(() => {
-    if (!isLoading) {
+    if (sessionChecked && !isLoading) {
       if (usuario) {
         // Redirecionar baseado no perfil
         const redirects: Record<string, string> = {
@@ -23,7 +23,7 @@ export default function DashboardPage() {
         router.push('/login')
       }
     }
-  }, [usuario, isLoading, router])
+  }, [usuario, isLoading, sessionChecked, router])
 
   return (
     <Box display="flex" justifyContent="center" alignItems="center" minH="100vh">
