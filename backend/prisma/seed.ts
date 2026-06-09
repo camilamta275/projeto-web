@@ -127,7 +127,7 @@ async function seed() {
       select: { id: true, nome: true },
     })
     const catId = (nome: string): number => {
-      const found = categoriaRows.find(c => c.nome === nome)
+      const found = categoriaRows.find((c: any) => c.nome === nome)
       if (!found) throw new Error(`Categoria não encontrada: "${nome}"`)
       return found.id
     }

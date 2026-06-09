@@ -121,7 +121,9 @@ echo -e "${GREEN}✓ Migrações aplicadas${NC}\n"
 # 6. Seed (categorias + admin)
 # ============================================================================
 echo -e "${YELLOW}[6/6] Populando banco com dados iniciais...${NC}"
-
+npm install uuid
+npm install -D @types/uuid
+npx prisma generate
 npx prisma db seed
 echo -e "${GREEN}✓ Seed executado (categorias e usuário admin criados)${NC}\n"
 
