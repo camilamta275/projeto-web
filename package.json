@@ -6,10 +6,16 @@
   "directories": {
     "doc": "docs"
   },
+  "engines": {
+    "node": "22.14.0"
+  },
   "scripts": {
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "build": "npm run build --prefix backend",
+    "start": "npm run start --prefix backend",
+    "migrate:deploy": "npm run migrate:deploy --prefix backend",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

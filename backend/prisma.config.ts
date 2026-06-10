@@ -10,6 +10,6 @@ export default defineConfig({
     seed: "ts-node prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] || "postgresql://postgres:BacoExu@localhost:5432/Fiscalize?schema=public",
+    url: process.env["DATABASE_URL"],
   },
 });

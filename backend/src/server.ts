@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes';
 import gestorRoutes from './routes/gestorRoutes';
@@ -10,25 +9,23 @@ import adminRoutes from './routes/adminRoutes';
 import metricsRoutes from './routes/metricsRoutes';
 import { errorHandler } from './middlewares/errorMiddleware';
 import { registerCronJobs } from './config/cron';
+import { createCorsMiddleware } from './config/cors';
+import { healthCheckHandler } from './config/health';
+import { connectPrisma, disconnectPrisma } from './config/prisma';
+import { isRedisAvailable } from './config/redis';
+import { NODE_ENV, PORT } from './config/env';
 import 'dotenv/config';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middlewares globais
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3001',
-  credentials: true,
-}));
+app.use(createCorsMiddleware());
 app.use(express.json());
-app.use(cookieParser()); // ESSENCIAL PARA LER OS COOKIES DO JWT!
+app.use(cookieParser());
 
-// Health check (público — use para verificar se o servidor está no ar)
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
+app.get('/health', (req, res) => {
+  void healthCheckHandler(req, res);
 });
 
-// Rotas
 app.use('/auth', authRoutes);
 app.use('/gestor', gestorRoutes);
 app.use('/users', userRoutes);
@@ -37,22 +34,50 @@ app.use('/categories', categoryRoutes);
 app.use('/admin', adminRoutes);
 app.use('/metrics', metricsRoutes);
 
-// Middleware de tratamento de erros (DEVE SER O ÚLTIMO)
 app.use(errorHandler);
 
-const server = app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  registerCronJobs();
-});
+async function startServer(): Promise<void> {
+  await connectPrisma();
 
-server.on('error', (err: NodeJS.ErrnoException) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`\nERRO: a porta ${PORT} já está em uso.`);
-    console.error('Encerre o processo anterior e tente novamente.');
-    console.error(`PowerShell: Get-NetTCPConnection -LocalPort ${PORT} | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n`);
+  const redisAvailable = await isRedisAvailable();
+
+  const server = app.listen(PORT, () => {
+    console.log(`[Server] Running on port ${PORT}`);
+    console.log(`[Server] NODE_ENV=${NODE_ENV}`);
+    console.log(`[Server] Redis: ${redisAvailable ? 'available' : 'unavailable'}`);
+    console.log(`[Server] Health check: http://localhost:${PORT}/health`);
+    registerCronJobs();
+  });
+
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\nERRO: a porta ${PORT} já está em uso.`);
+      console.error('Encerre o processo anterior e tente novamente.');
+      console.error(`PowerShell: Get-NetTCPConnection -LocalPort ${PORT} | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n`);
+      process.exit(1);
+    }
+    console.error('Erro ao iniciar servidor:', err);
     process.exit(1);
-  }
-  console.error('Erro ao iniciar servidor:', err);
+  });
+
+  const shutdown = async (signal: string) => {
+    console.log(`${signal} received. Closing server...`);
+    server.close(async () => {
+      await disconnectPrisma();
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
+
+  process.on('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
+}
+
+startServer().catch((error) => {
+  console.error('[Server] Startup failed:', error);
   process.exit(1);
 });

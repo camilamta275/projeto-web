@@ -3,12 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { AppError } from '../middlewares/errorMiddleware';
 import { prisma } from '../config/prisma';
-
-const JWT_SECRET: string =
-  process.env.JWT_SECRET || 'chave_secreta_super_segura';
-
-const JWT_EXPIRATION: string =
-  process.env.JWT_EXPIRATION || '24h';
+import { JWT_SECRET, JWT_EXPIRATION } from '../config/env';
 
 // Blocklist em memória (em produção: Redis)
 const tokenBlocklist = new Set<string>();
