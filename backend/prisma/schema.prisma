@@ -204,7 +204,7 @@ model regra_competencia {
   orgaoprincipalid                                 String     @db.VarChar(10)
   orgaosecundarioid                                String?    @db.VarChar(10)
   slahoras                                         Int
-  prioridade                                       prioridade @default(M_dia)
+  prioridade                                       prioridade @default(Media)
   criadoem                                         DateTime   @default(now()) @db.Timestamp(6)
   categoria                                        categoria  @relation(fields: [categoriaid], references: [id], onUpdate: NoAction)
   orgao_regra_competencia_orgaoprincipalidToorgao  orgao      @relation("regra_competencia_orgaoprincipalidToorgao", fields: [orgaoprincipalid], references: [id], onUpdate: NoAction)
@@ -318,9 +318,9 @@ enum perfil {
 
 enum prioridade {
   Baixa
-  M_dia   @map("Média")
+  Media   @map("Média")
   Alta
-  Cr_tica @map("Crítica")
+  Critica @map("Crítica")
 }
 
 enum status_chamado {

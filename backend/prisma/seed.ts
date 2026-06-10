@@ -1,7 +1,7 @@
 import { prisma } from '../src/config/prisma';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { tipo_orgao } from '@prisma/client';
+import { tipo_orgao, prioridade } from '@prisma/client';
 
 // =============================================================
 // DADOS DE SEED
@@ -100,6 +100,244 @@ const GESTOR_ID = '11111111-1111-1111-1111-111111111111'
 const CIDADAO_ID = '22222222-2222-2222-2222-222222222222'
 
 // =============================================================
+// REGRAS DE COMPETÊNCIA
+//
+// Cada entrada define: categoria + subcategoria → órgão responsável
+// Restrição: o órgão DEVE ter vínculo com a categoria via orgao_categoria
+// Unique constraint no banco: (categoriaid, subcategoria)
+// =============================================================
+
+type RegraInput = {
+  categoriaId: number;         // id da categoria
+  subcategoria: string;       // granularidade da regra
+  orgaoprincipalId: string;   // id do órgão (deve ter vínculo com a categoria)
+  orgaosecundarioId?: string; // opcional
+  slaHoras?: number;          // se omitido, herda do órgão principal
+  prioridade: prioridade;
+};
+
+const REGRAS: RegraInput[] = [
+  // ── INFRAESTRUTURA → EMLURB (vínculos: Infraestrutura, Saneamento Básico) ──
+  {
+    categoriaId: 1,
+    subcategoria: 'Buraco na pista',
+    orgaoprincipalId: 'EMLURB',
+    prioridade: 'Alta',
+    slaHoras: 48,
+  },
+  {
+    categoriaId: 1,
+    subcategoria: 'Calçada danificada',
+    orgaoprincipalId: 'EMLURB',
+    prioridade: 'Media',
+    slaHoras: 72,
+  },
+  {
+    categoriaId: 1,
+    subcategoria: 'Buraco em calçada',
+    orgaoprincipalId: 'EMLURB',
+    prioridade: 'Media',
+    slaHoras: 72,
+  },
+  {
+    categoriaId: 1,
+    subcategoria: 'Árvore caída bloqueando via',
+    orgaoprincipalId: 'EMLURB',
+    prioridade: 'Critica',
+    slaHoras: 6,
+  },
+
+  // ── INFRAESTRUTURA → SINFRA (rodovias estaduais) ──
+  {
+    categoriaId: 1,
+    subcategoria: 'Buraco em rodovia estadual',
+    orgaoprincipalId: 'SINFRA',
+    prioridade: 'Alta',
+    slaHoras: 72,
+  },
+  {
+    categoriaId: 1,
+    subcategoria: 'Deslizamento em rodovia',
+    orgaoprincipalId: 'SINFRA',
+    prioridade: 'Critica',
+    slaHoras: 12,
+  },
+
+  // ── INFRAESTRUTURA → SEMC (manutenção geral da cidade) ──
+  {
+    categoriaId: 1,
+    subcategoria: 'Muro de arrimo com risco de queda',
+    orgaoprincipalId: 'SEMC',
+    prioridade: 'Alta',
+    slaHoras: 24,
+  },
+  // {
+  //   categoriaId: 1,
+  //   subcategoria: 'Ponte ou passarela danificada',
+  //   orgaoprincipalId: 'SEMC',
+  //   prioridade: 'Critica',
+  //   slaHoras: 12,
+  // },
+
+  // ── ÁGUA E ESGOTO → COMPESA ──
+  {
+    categoriaId: 2,
+    subcategoria: 'Vazamento de água na rua',
+    orgaoprincipalId: 'COMPESA',
+    prioridade: 'Alta',
+    slaHoras: 24,
+  },
+  {
+    categoriaId: 2,
+    subcategoria: 'Falta de água no bairro',
+    orgaoprincipalId: 'COMPESA',
+    prioridade: 'Alta',
+    slaHoras: 48,
+  },
+  {
+    categoriaId: 2,
+    subcategoria: 'Esgoto a céu aberto',
+    orgaoprincipalId: 'COMPESA',
+    prioridade: 'Critica',
+    slaHoras: 24,
+  },
+  // {
+  //   categoriaId: 2,
+  //   subcategoria: 'Bueiro entupido com esgoto',
+  //   orgaoprincipalId: 'COMPESA',
+  //   prioridade: 'Alta',
+  //   slaHoras: 24,
+  // },
+  // {
+  //   categoriaId: 2,
+  //   subcategoria: 'Água com odor ou coloração suspeita',
+  //   orgaoprincipalId: 'COMPESA',
+  //   prioridade: 'Critica',
+  //   slaHoras: 12,
+  // },
+
+  // ── ILUMINAÇÃO PÚBLICA → CELPE ──
+  {
+    categoriaId: 3,
+    subcategoria: 'Poste apagado',
+    orgaoprincipalId: 'CELPE',
+    prioridade: 'Media',
+    slaHoras: 48,
+  },
+  {
+    categoriaId: 3,
+    subcategoria: 'Poste piscando',
+    orgaoprincipalId: 'CELPE',
+    prioridade: 'Baixa',
+    slaHoras: 72,
+  },
+  {
+    categoriaId: 3,
+    subcategoria: 'Fiação exposta com risco elétrico',
+    orgaoprincipalId: 'CELPE',
+    prioridade: 'Critica',
+    slaHoras: 6,
+  },
+  {
+    categoriaId: 3,
+    subcategoria: 'Poste inclinado ou tombado',
+    orgaoprincipalId: 'CELPE',
+    prioridade: 'Alta',
+    slaHoras: 12,
+  },
+  // {
+  //   categoriaId: 3,
+  //   subcategoria: 'Lâmpada queimada em praça pública',
+  //   orgaoprincipalId: 'CELPE',
+  //   prioridade: 'Media',
+  //   slaHoras: 72,
+  // },
+
+  // ── SANEAMENTO BÁSICO → EMLURB ──
+  {
+    categoriaId: 4,
+    subcategoria: 'Lixo não coletado',
+    orgaoprincipalId: 'EMLURB',
+    prioridade: 'Media',
+    slaHoras: 48,
+  },
+  {
+    categoriaId: 4,
+    subcategoria: 'Entulho irregular em via pública',
+    orgaoprincipalId: 'EMLURB',
+    prioridade: 'Media',
+    slaHoras: 72,
+  },
+  // {
+  //   categoriaId: 4,
+  //   subcategoria: 'Ponto viciado de descarte irregular',
+  //   orgaoprincipalId: 'EMLURB',
+  //   prioridade: 'Baixa',
+  //   slaHoras: 96,
+  // },
+  {
+    categoriaId: 4,
+    subcategoria: 'Acúmulo de lixo com infestação',
+    orgaoprincipalId: 'EMLURB',
+    prioridade: 'Alta',
+    slaHoras: 24,
+  },
+
+  // ── SINALIZAÇÃO → CTTU ──
+  {
+    categoriaId: 5,
+    subcategoria: 'Semáforo com defeito',
+    orgaoprincipalId: 'CTTU',
+    prioridade: 'Alta',
+    slaHoras: 12,
+  },
+  {
+    categoriaId: 5,
+    subcategoria: 'Placa de trânsito danificada ou ausente',
+    orgaoprincipalId: 'CTTU',
+    prioridade: 'Media',
+    slaHoras: 48,
+  },
+  {
+    categoriaId: 5,
+    subcategoria: 'Faixa de pedestre apagada',
+    orgaoprincipalId: 'CTTU',
+    prioridade: 'Media',
+    slaHoras: 72,
+  },
+  // {
+  //   categoriaId: 5,
+  //   subcategoria: 'Semáforo apagado em cruzamento movimentado',
+  //   orgaoprincipalId: 'CTTU',
+  //   prioridade: 'Critica',
+  //   slaHoras: 6,
+  // },
+
+  // ── OUTROS PROBLEMAS → SEMC ──
+  {
+    categoriaId: 6,
+    subcategoria: 'Pichação em bem público',
+    orgaoprincipalId: 'SEMC',
+    prioridade: 'Baixa',
+    slaHoras: 120,
+  },
+  {
+    categoriaId: 6,
+    subcategoria: 'Mobiliário urbano danificado',
+    orgaoprincipalId: 'SEMC',
+    prioridade: 'Baixa',
+    slaHoras: 96,
+  },
+  {
+    categoriaId: 6,
+    subcategoria: 'Abrigo de ônibus danificado',
+    orgaoprincipalId: 'SEMC',
+    prioridade: 'Media',
+    slaHoras: 72,
+  },
+];
+
+// =============================================================
 // SEED
 // =============================================================
 
@@ -133,6 +371,12 @@ async function seed() {
       return found.id
     }
 
+    const catNome = (id: number): string => {
+      const found = categoriaRows.find(c => c.id === id)
+      if (!found) throw new Error(`Categoria não encontrada para o id informado"`)
+      return found.nome
+    }
+
     // ----------------------------------------------------------
     // 2. Órgãos + vínculos com categorias
     // ----------------------------------------------------------
@@ -156,7 +400,66 @@ async function seed() {
     console.log(`✓ ${ORGAOS.length} órgãos criados/verificados com seus vínculos de categoria`)
 
     // ----------------------------------------------------------
-    // 3. Admin
+    // 3. Regras de competência
+    // ----------------------------------------------------------
+    let regrasCriadas = 0;
+    let regrasIgnoradas = 0;
+
+    for (const regra of REGRAS) {
+      const categoriaNome = catNome(regra.categoriaId);
+
+      // Garante que o órgão tem vínculo com a categoria antes de inserir
+      const vinculo = await prisma.orgao_categoria.findUnique({
+        where: {
+          orgaoid_categoriaid: {
+            orgaoid: regra.orgaoprincipalId,
+            categoriaid: regra.categoriaId,
+          },
+        },
+      });
+
+      if (!vinculo) {
+        console.warn(
+          `  ⚠ Pulando regra "${regra.subcategoria}": órgão ${regra.orgaoprincipalId} não tem vínculo com categoria "${categoriaNome}"`
+        );
+        regrasIgnoradas++;
+        continue;
+      }
+
+      // Busca SLA do órgão como fallback
+      const orgao = await prisma.orgao.findUnique({
+        where: { id: regra.orgaoprincipalId },
+        select: { slahoras: true },
+      });
+
+      await prisma.regra_competencia.upsert({
+        where: {
+          categoriaid_subcategoria: {
+            categoriaid: regra.categoriaId,
+            subcategoria: regra.subcategoria,
+          },
+        },
+        update: {}, // não sobrescreve regras editadas manualmente
+        create: {
+          categoriaid: regra.categoriaId,
+          subcategoria: regra.subcategoria,
+          orgaoprincipalid: regra.orgaoprincipalId,
+          orgaosecundarioid: regra.orgaosecundarioId ?? null,
+          slahoras: regra.slaHoras ?? orgao?.slahoras ?? 72,
+          prioridade: regra.prioridade,
+        },
+      });
+
+      regrasCriadas++;
+    }
+
+    console.log(
+      `✓ ${regrasCriadas} regras de competência criadas/verificadas${regrasIgnoradas > 0 ? ` (${regrasIgnoradas} ignoradas por vínculo ausente)` : ''
+      }`
+    );
+
+    // ----------------------------------------------------------
+    // 4. Admin
     // ----------------------------------------------------------
     const adminExistente = await prisma.usuario.findUnique({
       where: { email: adminEmail },
