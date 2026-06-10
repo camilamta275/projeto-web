@@ -4,9 +4,7 @@ import jwt, {
   JsonWebTokenError,
 } from 'jsonwebtoken';
 import { authService } from '../services/authService';
-
-const JWT_SECRET =
-  process.env.JWT_SECRET || 'chave_secreta_super_segura';
+import { JWT_SECRET } from '../config/env';
 
 // Estendendo Request para incluir usuário autenticado
 declare global {
