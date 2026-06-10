@@ -42,7 +42,7 @@ bun dev
 ```
 
 3. **Abra o navegador**
-Acesse [http://localhost:3000](http://localhost:3000)
+Acesse [http://localhost:3001](http://localhost:3001)
 
 ## 📁 Estrutura do Projeto
 
@@ -280,7 +280,7 @@ Para integrar com um backend real:
 Crie um arquivo `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXT_PUBLIC_API_URL=http://localhost:3000
 NEXT_PUBLIC_APP_NAME=Fiscalize
 NEXT_PUBLIC_APP_DESCRIPTION=Sistema integrado de gestão urbana de Pernambuco
 ```

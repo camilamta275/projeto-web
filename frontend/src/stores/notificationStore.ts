@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { MOCK_API_BASE_URL } from '@/utils/constants'
 
 export interface Notificacao {
   id: string
@@ -28,7 +29,7 @@ export const useNotificacoesStore = create<NotificacoesState>((set) => ({
   fetchNotificacoes: async (usuarioId: string) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/notificacoes?usuarioId=${usuarioId}`
+        `${MOCK_API_BASE_URL}/notificacoes?usuarioId=${usuarioId}`
       )
       if (!response.ok) {
         throw new Error('Erro ao buscar notificações')
@@ -43,7 +44,7 @@ export const useNotificacoesStore = create<NotificacoesState>((set) => ({
 
   marcarComoLida: async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/notificacoes/${id}`, {
+      const response = await fetch(`${MOCK_API_BASE_URL}/notificacoes/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lida: true }),
