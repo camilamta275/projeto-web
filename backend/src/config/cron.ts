@@ -2,6 +2,10 @@ import cron from 'node-cron';
 import { runMetricsConsolidation } from '../services/metricsConsolidationService';
 
 export function registerCronJobs(): void {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
   const schedule = process.env.CRON_METRICS_SCHEDULE || '0 * * * *';
 
   if (!cron.validate(schedule)) {

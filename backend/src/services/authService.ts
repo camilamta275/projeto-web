@@ -132,4 +132,8 @@ export const authService = {
   isTokenBlocked(token: string): boolean {
     return tokenBlocklist.has(token);
   },
+
+  clearTokenBlocklist(): void {
+    tokenBlocklist.clear();
+  },
 };
