@@ -41,6 +41,14 @@ router.put(
   organController.editarStatus
 );
 
+// GET /admin/organs/:id/categories
+// Retorna as categorias vinculadas a um órgão específico (para popular o select no modal de regras)
+router.get(
+  '/organs/:id/categories',
+  requireRole(['Admin']),
+  organController.listarCategoriasPorOrgao
+);
+
 /* =========================
    USERS (NOVO - ADMIN)
 ========================= */
@@ -81,21 +89,35 @@ router.post(
 );
 
 /* =========================
-   ROUTING RULES
+   ROUTING RULES (NOVO)
 ========================= */
 
 // POST /admin/routing-rules
 router.post(
   '/routing-rules',
   requireRole(['Admin']),
-  routingRuleController.create
+  adminController.criarRegraCompetencia
 );
 
-// PUT /admin/routing-rules/:id
-router.put(
+// GET /admin/routing-rules
+router.get(
+  '/routing-rules',
+  requireRole(['Admin']),
+  adminController.listarRegrasCompetencia
+);
+
+// PATCH /admin/routing-rules/:id
+router.patch(
   '/routing-rules/:id',
   requireRole(['Admin']),
-  routingRuleController.update
+  adminController.editarRegraCompetencia
+);
+
+// DELETE /admin/routing-rules/:id
+router.delete(
+  '/routing-rules/:id',
+  requireRole(['Admin']),
+  adminController.deletarRegraCompetencia
 );
 
 /* =========================

@@ -214,5 +214,25 @@ export const organService = {
         const orgao = await organRepository.obterOrgaoPorId(id);
 
         return orgao?.status;
-    }
+    },
+
+    /**
+   * Retorna as categorias vinculadas a um órgão.
+   * Usado para popular o select de categorias no modal de regras
+   * após o usuário selecionar um órgão principal.
+   */
+    async listarCategoriasPorOrgao(orgaoId: string) {
+        const orgao = await organRepository.obterOrgaoPorId(orgaoId);
+
+        if (!orgao) {
+            const erro = new Error(`Órgão '${orgaoId}' não encontrado`) as Error & { statusCode?: number };
+            erro.statusCode = 404;
+            throw erro;
+        }
+
+        return orgao.orgao_categoria.map((oc) => ({
+            id: oc.categoria.id,
+            nome: oc.categoria.nome,
+        }));
+    },
 };

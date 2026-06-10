@@ -283,9 +283,13 @@ export const demandService = {
       throw new AppError(403, 'Usuário não possui perfil de cidadão para registrar demandas.');
     }
 
-    // 3. Resolve orgaoid from routing_rules
+    // 3. Resolve orgaoid, prioridade, slahoras from regra_competencia or fallbacks
+    const regra = await prisma.regra_competencia.findFirst({
+      where: { categoriaid: categoryId, subcategoria: title },
+    });
+
     const orgaoid = await resolveOrgan(categoryId);
-    let prioridade: 'Baixa' | 'M_dia' | 'Alta' | 'Cr_tica' = 'M_dia';
+    let prioridade: 'Baixa' | 'Media' | 'Alta' | 'Critica' = 'Media';
     let slahoras = 48;
 
     if (orgaoid) {
@@ -353,92 +357,90 @@ export const demandService = {
   },
 
   async updateStatus(chamadoId: string, userId: string, newStatus: any) {
-  const chamado = await prisma.chamado.findUnique({
-    where: { id: chamadoId },
-  });
-
-  if (!chamado) throw new AppError(404, 'Demanda não encontrada.');
-
-  const validStatuses = [
-    'Aberto',
-    'Em_An_lise',
-    'Em_Andamento',
-    'Aguardando',
-    'Resolvido',
-    'Fechado',
-  ];
-
-  if (!validStatuses.includes(newStatus)) {
-    throw new AppError(400, `Status inválido.`);
-  }
-
-  const oldStatus = chamado.status;
-
-  const updated = await prisma.$transaction(async (tx) => {
-    const result = await tx.chamado.update({
+    const chamado = await prisma.chamado.findUnique({
       where: { id: chamadoId },
-      data: {
-        status: newStatus,
-        atualizadoem: new Date(),
-      },
     });
 
-    await tx.timeline_event.create({
-      data: {
-        chamadoid: chamadoId,
-        tipo: 'status',
-        titulo: 'Status atualizado',
-        descricao: `Status alterado de ${oldStatus} para ${newStatus}`,
-        autor: userId,
-        dadosantigos: { status: oldStatus },
-        dadosnovos: { status: newStatus },
-      },
+    if (!chamado) throw new AppError(404, 'Demanda não encontrada.');
+
+    const validStatuses = [
+      'Aberto',
+      'Em_An_lise',
+      'Em_Andamento',
+      'Aguardando',
+      'Resolvido',
+      'Fechado',
+    ];
+
+    if (!validStatuses.includes(newStatus)) {
+      throw new AppError(400, `Status inválido.`);
+    }
+
+    const oldStatus = chamado.status;
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.chamado.update({
+        where: { id: chamadoId },
+        data: {
+          status: newStatus,
+          atualizadoem: new Date(),
+        },
+      });
+
+      await tx.timeline_event.create({
+        data: {
+          chamadoid: chamadoId,
+          tipo: 'status',
+          titulo: 'Status atualizado',
+          descricao: `Status alterado de ${oldStatus} para ${newStatus}`,
+          autor: userId,
+          dadosantigos: { status: oldStatus },
+          dadosnovos: { status: newStatus },
+        },
+      });
+
+      return result;
     });
 
-    return result;
-  });
+    await invalidateMetricsCache(chamado.gestorid);
 
-  await invalidateMetricsCache(chamado.gestorid);
+    return {
+      id: updated.id,
+      status: updated.status,
+      updatedAt: updated.atualizadoem,
+    };
+  },
 
-  return {
-    id: updated.id,
-    status: updated.status,
-    updatedAt: updated.atualizadoem,
-  };
-},
-
-async deleteDemand(chamadoId: string, userId: string) {
-  const chamado = await prisma.chamado.findUnique({
-    where: { id: chamadoId },
-  });
-
-  if (!chamado) {
-    throw new AppError(404, 'Demanda não encontrada.');
-  }
-
-  await prisma.$transaction(async (tx) => {
-    // soft delete
-    await tx.chamado.update({
+  async deleteDemand(chamadoId: string, userId: string) {
+    const chamado = await prisma.chamado.findUnique({
       where: { id: chamadoId },
-      data: {
-        status: 'Fechado',
-      },
     });
 
-    await tx.timeline_event.create({
-      data: {
-        chamadoid: chamadoId,
-        tipo: 'transferencia',
-        titulo: 'Demanda removida',
-        descricao: 'Demanda marcada como excluída (soft delete).',
-        autor: userId,
-        dadosantigos: { status: chamado.status },
-        dadosnovos: { status: 'Fechado' },
-      },
+    if (!chamado) {
+      throw new AppError(404, 'Demanda não encontrada.');
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.chamado.update({
+        where: { id: chamadoId },
+        data: {
+          status: 'Fechado',
+        },
+      });
+
+      await tx.timeline_event.create({
+        data: {
+          chamadoid: chamadoId,
+          tipo: 'transferencia',
+          titulo: 'Demanda removida',
+          descricao: 'Demanda marcada como excluída (soft delete).',
+          autor: userId,
+          dadosantigos: { status: chamado.status },
+          dadosnovos: { status: 'Fechado' },
+        },
+      });
     });
-  });
 
-  await invalidateMetricsCache(chamado.gestorid);
-},
-
-};
+    await invalidateMetricsCache(chamado.gestorid);
+  },
+}

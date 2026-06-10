@@ -102,4 +102,25 @@ export const organController = {
             next(error);
         }
     },
+
+    /**
+   * GET /admin/organs/:id/categories
+   * Retorna as categorias vinculadas ao órgão informado.
+   * Usado pelo modal de regras para filtrar o select de categorias
+   * após o usuário selecionar um órgão principal.
+   */
+    async listarCategoriasPorOrgao(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = req.params.id as string;
+
+            const categorias = await service.listarCategoriasPorOrgao(id);
+            return res.status(200).json(categorias);
+
+        } catch (error) {
+            const err = error as Error & { statusCode?: number };
+
+            if (err.statusCode === 404) return res.status(404).json({ message: err.message });
+            next(error);
+        }
+    },
 };
