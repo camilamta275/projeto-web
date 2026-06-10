@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+    "node": "22.14.0"
+  },
   "scripts": {
     "dev": "ts-node-dev src/server.ts",
     "build": "prisma generate && tsc",
