@@ -50,7 +50,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`\nERRO: a porta ${PORT} já está em uso.`);
     console.error('Encerre o processo anterior e tente novamente.');
-    console.error('PowerShell: Get-NetTCPConnection -LocalPort 3000 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n');
+    console.error(`PowerShell: Get-NetTCPConnection -LocalPort ${PORT} | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n`);
     process.exit(1);
   }
   console.error('Erro ao iniciar servidor:', err);

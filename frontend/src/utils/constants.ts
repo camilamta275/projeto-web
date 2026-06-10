@@ -43,6 +43,12 @@ export const TICKET_STATUS_COLORS: Record<TicketStatus, string> = {
 
 export const PAGINATION_SIZE = 10
 
+/** Express API (backend) */
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+
+/** json-server mock API (dev only) */
+export const MOCK_API_BASE_URL = process.env.NEXT_PUBLIC_MOCK_API_URL || 'http://localhost:3002'
+
 export const API_ENDPOINTS = {
   AUTH: '/api/auth',
   TICKETS: '/api/tickets',

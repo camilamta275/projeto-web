@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Chamado } from '@/types'
 import { api } from '@/lib/api'
+import { MOCK_API_BASE_URL } from '@/utils/constants'
 
 interface CategoriaDemanda {
   category: string
@@ -71,7 +72,7 @@ export const useGestorStore = create<GestorState>((set) => ({
     set({ loading: true, error: null })
     try {
       const response = await fetch(
-        `http://localhost:3001/chamados?orgaoId=${orgaoId}&status=Aberto`
+        `${MOCK_API_BASE_URL}/chamados?orgaoId=${orgaoId}&status=Aberto`
       )
       if (!response.ok) throw new Error('Erro ao buscar fila')
       const chamados = await response.json()
@@ -87,7 +88,7 @@ export const useGestorStore = create<GestorState>((set) => ({
   atribuirChamado: async (chamadoId: string, gestorId: string) => {
     set({ loading: true, error: null })
     try {
-      const response = await fetch(`http://localhost:3001/chamados/${chamadoId}`, {
+      const response = await fetch(`${MOCK_API_BASE_URL}/chamados/${chamadoId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gestorId, status: 'Em Análise', atualizadoEm: new Date().toISOString() }),
@@ -102,7 +103,7 @@ export const useGestorStore = create<GestorState>((set) => ({
   transferirChamado: async (chamadoId: string, orgaoId: string) => {
     set({ loading: true, error: null })
     try {
-      const response = await fetch(`http://localhost:3001/chamados/${chamadoId}`, {
+      const response = await fetch(`${MOCK_API_BASE_URL}/chamados/${chamadoId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orgaoId, status: 'Em Análise', atualizadoEm: new Date().toISOString() }),
