@@ -288,6 +288,18 @@ model audit_logs {
   @@index([created_at(sort: Desc)], map: "idx_audit_logs_created_at")
 }
 
+model metrics_snapshot {
+  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  porstatus           Json
+  porcategoria        Json
+  tempomedioresolucao Decimal  @db.Decimal(10, 2)
+  jobstatus           String   @default("success") @db.VarChar(20)
+  errormessage        String?
+  criadoem            DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([criadoem(sort: Desc)], map: "idx_metrics_snapshot_criadoem")
+}
+
 model usuario_audit {
   id           Int      @id @default(autoincrement())
   usuarioid    String   @db.Uuid

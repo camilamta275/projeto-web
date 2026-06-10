@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma';
 import { AppError } from '../middlewares/errorMiddleware';
+import { invalidateMetricsCache } from '../utils/cache';
 
 interface UpdateDemandInput {
   id: string;
@@ -248,6 +249,10 @@ export const demandService = {
       return result;
     });
 
+    if (categoryId !== undefined) {
+      await invalidateMetricsCache(chamado.gestorid);
+    }
+
     return {
       id: updated.id,
       protocolo: updated.protocolo,
@@ -331,6 +336,8 @@ export const demandService = {
       return created;
     });
 
+    await invalidateMetricsCache(chamado.gestorid);
+
     return {
       id: chamado.id,
       protocolo: chamado.protocolo,
@@ -391,6 +398,8 @@ export const demandService = {
     return result;
   });
 
+  await invalidateMetricsCache(chamado.gestorid);
+
   return {
     id: updated.id,
     status: updated.status,
@@ -428,6 +437,8 @@ async deleteDemand(chamadoId: string, userId: string) {
       },
     });
   });
+
+  await invalidateMetricsCache(chamado.gestorid);
 },
 
 };

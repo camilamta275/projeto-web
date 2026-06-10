@@ -9,6 +9,7 @@ import categoryRoutes from './routes/categoryRoutes';
 import adminRoutes from './routes/adminRoutes';
 import metricsRoutes from './routes/metricsRoutes';
 import { errorHandler } from './middlewares/errorMiddleware';
+import { registerCronJobs } from './config/cron';
 import 'dotenv/config';
 
 const app = express();
@@ -42,6 +43,7 @@ app.use(errorHandler);
 const server = app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
+  registerCronJobs();
 });
 
 server.on('error', (err: NodeJS.ErrnoException) => {

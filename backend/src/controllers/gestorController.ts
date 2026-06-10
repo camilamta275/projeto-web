@@ -6,6 +6,7 @@ import { status_chamado } from '@prisma/client';
 // 2. Importe a instância do Prisma que já está pronta no seu arquivo de config
 // Atenção às chaves { prisma }, pois você usou "export const prisma" no arquivo!
 import { prisma } from '../config/prisma';
+import { invalidateMetricsCache } from '../utils/cache';
 
 export const gestorController = {
   // GET /gestor/dashboard - Estatísticas do gestor
@@ -227,6 +228,8 @@ export const gestorController = {
           atualizadoem: true,
         },
       });
+
+      await invalidateMetricsCache(chamado.gestorid);
 
       res.status(200).json({
         message: 'Status do chamado atualizado com sucesso.',
