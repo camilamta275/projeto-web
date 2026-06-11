@@ -371,10 +371,13 @@ async function seed() {
       return found.id
     }
 
-    const catNome = (id: number): string => {
-      const found = categoriaRows.find(c => c.id === id)
-      if (!found) throw new Error(`Categoria não encontrada para o id informado"`)
-      return found.nome
+    // As REGRAS referenciam categorias pelo id lógico (posição em CATEGORIAS,
+    // 1-indexed), não pelo id serial do banco — que não começa necessariamente
+    // em 1 e varia entre execuções. Resolve o id real a partir do id lógico.
+    const categoriaRealId = (idLogico: number): number => {
+      const nome = CATEGORIAS[idLogico - 1]?.nome
+      if (!nome) throw new Error(`Categoria lógica inválida nas REGRAS: ${idLogico}`)
+      return catId(nome)
     }
 
     // ----------------------------------------------------------
@@ -406,14 +409,15 @@ async function seed() {
     let regrasIgnoradas = 0;
 
     for (const regra of REGRAS) {
-      const categoriaNome = catNome(regra.categoriaId);
+      const categoriaid = categoriaRealId(regra.categoriaId);
+      const categoriaNome = CATEGORIAS[regra.categoriaId - 1]!.nome;
 
       // Garante que o órgão tem vínculo com a categoria antes de inserir
       const vinculo = await prisma.orgao_categoria.findUnique({
         where: {
           orgaoid_categoriaid: {
             orgaoid: regra.orgaoprincipalId,
-            categoriaid: regra.categoriaId,
+            categoriaid,
           },
         },
       });
@@ -435,13 +439,13 @@ async function seed() {
       await prisma.regra_competencia.upsert({
         where: {
           categoriaid_subcategoria: {
-            categoriaid: regra.categoriaId,
+            categoriaid,
             subcategoria: regra.subcategoria,
           },
         },
         update: {}, // não sobrescreve regras editadas manualmente
         create: {
-          categoriaid: regra.categoriaId,
+          categoriaid,
           subcategoria: regra.subcategoria,
           orgaoprincipalid: regra.orgaoprincipalId,
           orgaosecundarioid: regra.orgaosecundarioId ?? null,
