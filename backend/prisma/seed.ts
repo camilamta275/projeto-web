@@ -16,7 +16,7 @@ const CATEGORIAS = [
   { nome: 'Outros Problemas', descricao: 'Outros problemas urbanos não listados acima' },
 ]
 
-const ORGAOS-CATEGIAS: {
+const ORGAOS: {
   id: string
   nome: string
   sigla: string
@@ -545,7 +545,7 @@ async function seed() {
           nome: 'Cidadão Teste',
           email: 'cidadao@fiscalize.gov.br',
           senha: senhaHash,
-          perfil: 'Cidad_o',
+          perfil: 'Cidadao',
           status: 'Ativo',
         },
       })
@@ -581,7 +581,7 @@ async function seed() {
         protocolo: 'DEM-SEED-002',
         descricao: 'Calçada danificada causando risco de queda.',
         status: 'Aberto' as const,
-        prioridade: 'M_dia' as const,
+        prioridade: 'Media' as const,
         gestorid: GESTOR_ID,
       },
       {
@@ -602,7 +602,7 @@ async function seed() {
         protocolo: 'DEM-SEED-005',
         descricao: 'Substituição de meio-fio em andamento.',
         status: 'Em_Andamento' as const,
-        prioridade: 'M_dia' as const,
+        prioridade: 'Media' as const,
         gestorid: GESTOR_ID,
       },
       {
@@ -616,7 +616,7 @@ async function seed() {
         protocolo: 'DEM-SEED-007',
         descricao: 'Calçada reconstruída e liberada para uso.',
         status: 'Resolvido' as const,
-        prioridade: 'M_dia' as const,
+        prioridade: 'Media' as const,
         gestorid: GESTOR_ID,
       },
       {
