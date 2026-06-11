@@ -16,7 +16,7 @@ const CATEGORIAS = [
   { nome: 'Outros Problemas', descricao: 'Outros problemas urbanos não listados acima' },
 ]
 
-const ORGAOS: {
+const ORGAOS-CATEGIAS: {
   id: string
   nome: string
   sigla: string
