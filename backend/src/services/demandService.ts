@@ -1,6 +1,20 @@
 import { prisma } from '../config/prisma';
 import { AppError } from '../middlewares/errorMiddleware';
 import { invalidateMetricsCache } from '../utils/cache';
+import { status_chamado } from '@prisma/client';
+
+const STATUS_DISPLAY: Record<status_chamado, string> = {
+  Aberto: 'Aberto',
+  Em_An_lise: 'Em Análise',
+  Em_Andamento: 'Em Andamento',
+  Aguardando: 'Aguardando',
+  Resolvido: 'Resolvido',
+  Fechado: 'Fechado',
+};
+
+function displayStatus(s: status_chamado): string {
+  return STATUS_DISPLAY[s] ?? s;
+}
 
 interface UpdateDemandInput {
   id: string;
@@ -90,7 +104,7 @@ export const demandService = {
         protocolo: c.protocolo,
         title: c.subcategoria,
         description: c.descricao,
-        status: c.status,
+        status: displayStatus(c.status),
         location: c.endereco,
         latitude: Number(c.latitude),
         longitude: Number(c.longitude),
@@ -132,7 +146,7 @@ export const demandService = {
       protocolo: chamado.protocolo,
       title: chamado.subcategoria,
       description: chamado.descricao,
-      status: chamado.status,
+      status: displayStatus(chamado.status),
       location: chamado.endereco,
       latitude: Number(chamado.latitude),
       longitude: Number(chamado.longitude),
@@ -262,7 +276,7 @@ export const demandService = {
       location: updated.endereco,
       latitude: Number(updated.latitude),
       longitude: Number(updated.longitude),
-      status: updated.status,
+      status: displayStatus(updated.status),
       createdAt: updated.criadoem,
       updatedAt: updated.atualizadoem,
     };
@@ -367,7 +381,7 @@ export const demandService = {
       location: chamado.endereco,
       latitude: Number(chamado.latitude),
       longitude: Number(chamado.longitude),
-      status: chamado.status,
+      status: displayStatus(chamado.status),
       createdAt: chamado.criadoem,
     };
   },
@@ -422,7 +436,7 @@ export const demandService = {
 
     return {
       id: updated.id,
-      status: updated.status,
+      status: displayStatus(updated.status),
       updatedAt: updated.atualizadoem,
     };
   },

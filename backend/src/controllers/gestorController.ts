@@ -1,12 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../middlewares/errorMiddleware';
-// 1. Puxe do pacote @prisma/client APENAS os tipos ou enums (como o status_chamado)
 import { status_chamado } from '@prisma/client';
-
-// 2. Importe a instância do Prisma que já está pronta no seu arquivo de config
-// Atenção às chaves { prisma }, pois você usou "export const prisma" no arquivo!
 import { prisma } from '../config/prisma';
 import { invalidateMetricsCache } from '../utils/cache';
+
+const STATUS_DISPLAY: Record<status_chamado, string> = {
+  Aberto: 'Aberto',
+  Em_An_lise: 'Em Análise',
+  Em_Andamento: 'Em Andamento',
+  Aguardando: 'Aguardando',
+  Resolvido: 'Resolvido',
+  Fechado: 'Fechado',
+};
+
+function displayStatus(s: status_chamado): string {
+  return STATUS_DISPLAY[s] ?? s;
+}
 
 export const gestorController = {
   // GET /gestor/dashboard - Estatísticas do gestor
@@ -107,7 +116,7 @@ export const gestorController = {
           id: c.id,
           protocolo: c.protocolo,
           descricao: c.descricao,
-          status: c.status,
+          status: displayStatus(c.status),
           prioridade: c.prioridade,
           endereco: c.endereco,
           latitude: Number(c.latitude),
@@ -177,7 +186,7 @@ export const gestorController = {
           protocolo: c.protocolo,
           subcategoria: c.subcategoria,
           descricao: c.descricao,
-          status: c.status,
+          status: displayStatus(c.status),
           prioridade: c.prioridade,
           endereco: c.endereco,
           slaHoras: c.slahoras,
