@@ -1,8 +1,10 @@
 import { metricsRepository } from '../repositories/metricsRepository';
 import { getCache, setCache, metricsScopeKey, METRICS_CACHE_TTL } from '../utils/cache';
 
-async function computeAverageResponseTime(scope: { gestorid?: string }) {
-  const where = scope.gestorid ? { gestorid: scope.gestorid } : {};
+type Scope = { orgaoid?: string };
+
+async function computeAverageResponseTime(scope: Scope) {
+  const where = scope.orgaoid ? { orgaoid: scope.orgaoid } : {};
   const chamados = await metricsRepository.averageResponseTime(where);
 
   const diferencasHoras: number[] = [];
@@ -30,8 +32,8 @@ async function computeAverageResponseTime(scope: { gestorid?: string }) {
   };
 }
 
-async function computeDemandsByCategory(scope: { gestorid?: string }) {
-  const where = scope.gestorid ? { gestorid: scope.gestorid } : {};
+async function computeDemandsByCategory(scope: Scope) {
+  const where = scope.orgaoid ? { orgaoid: scope.orgaoid } : {};
   const { categorias, grupos } = await metricsRepository.demandsByCategory(where);
 
   const countMap = new Map(grupos.map(g => [g.categoriaid, g._count.id]));
@@ -47,8 +49,8 @@ async function computeDemandsByCategory(scope: { gestorid?: string }) {
   });
 }
 
-async function computeTotalDemands(scope: { gestorid?: string }) {
-  const where = scope.gestorid ? { gestorid: scope.gestorid } : {};
+async function computeTotalDemands(scope: Scope) {
+  const where = scope.orgaoid ? { orgaoid: scope.orgaoid } : {};
   return metricsRepository.countByScope(where);
 }
 
@@ -57,7 +59,7 @@ export const metricsService = {
   computeDemandsByCategory,
   computeTotalDemands,
 
-  async averageResponseTime(scope: { gestorid?: string }) {
+  async averageResponseTime(scope: Scope) {
     const cacheKey = `metrics:avg-response:${metricsScopeKey(scope)}`;
     const cached = await getCache<Awaited<ReturnType<typeof computeAverageResponseTime>>>(cacheKey);
     if (cached) return cached;
@@ -67,7 +69,7 @@ export const metricsService = {
     return result;
   },
 
-  async demandsByCategory(scope: { gestorid?: string }) {
+  async demandsByCategory(scope: Scope) {
     const cacheKey = `metrics:category:${metricsScopeKey(scope)}`;
     const cached = await getCache<Awaited<ReturnType<typeof computeDemandsByCategory>>>(cacheKey);
     if (cached) return cached;
@@ -77,7 +79,7 @@ export const metricsService = {
     return result;
   },
 
-  async totalDemands(scope: { gestorid?: string }) {
+  async totalDemands(scope: Scope) {
     const cacheKey = `metrics:total:${metricsScopeKey(scope)}`;
     const cached = await getCache<Awaited<ReturnType<typeof computeTotalDemands>>>(cacheKey);
     if (cached) return cached;

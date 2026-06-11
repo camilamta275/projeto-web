@@ -1,7 +1,9 @@
 import { prisma } from '../config/prisma';
 
+type Scope = { orgaoid?: string };
+
 export const metricsRepository = {
-  async averageResponseTime(where: { gestorid?: string }) {
+  async averageResponseTime(where: Scope) {
     return prisma.chamado.findMany({
       where: {
         ...where,
@@ -18,7 +20,7 @@ export const metricsRepository = {
     });
   },
 
-  async demandsByCategory(where: { gestorid?: string }) {
+  async demandsByCategory(where: Scope) {
     const [categorias, grupos] = await Promise.all([
       prisma.categoria.findMany({ select: { id: true, nome: true } }),
       prisma.chamado.groupBy({
@@ -31,7 +33,7 @@ export const metricsRepository = {
     return { categorias, grupos };
   },
 
-  async countByScope(where: { gestorid?: string }) {
+  async countByScope(where: Scope) {
     const [total, aberta, em_andamento, resolvida, encerrada] = await Promise.all([
       prisma.chamado.count({ where }),
       prisma.chamado.count({ where: { ...where, status: 'Aberto' } }),
