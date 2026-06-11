@@ -20,7 +20,7 @@ export const authService = {
 
     const hashedPassword = await bcrypt.hash(senha, 10);
 
-    const usuario = await prisma.$transaction(async (tx) => {
+    const usuario = await prisma.$transaction(async (tx: any) => {
       const created = await tx.usuario.create({
         data: {
           nome,

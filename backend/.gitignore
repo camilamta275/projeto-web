@@ -17,7 +17,6 @@ prisma/migrations/dev.db*
 *.db-journal
 *.sqlite
 *.sqlite3
-prisma/seed.ts
 
 # PostgreSQL dumps / backups
 *.sql.backup
