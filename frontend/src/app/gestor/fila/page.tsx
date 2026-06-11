@@ -1,16 +1,17 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   Box, Container, VStack, HStack, Heading, Text, Select, Button, Table,
   Thead, Tbody, Tr, Th, Td, Badge, Checkbox, Card, CardBody, Input,
+  Spinner, Alert, AlertIcon, AlertDescription,
   useToast
 } from '@chakra-ui/react'
 import Link from 'next/link'
 import { StatusBadge } from '@/components/StatusBadge'
 import { PriorityBadge } from '@/components/PriorityBadge'
+import { useGestorStore } from '@/stores/gestorStore'
 
-// Interface estendida com criadoEm para o filtro de tempo
 interface ChamadoFila {
   id: string
   protocolo: string
@@ -19,75 +20,52 @@ interface ChamadoFila {
   slaRestante: number
   prioridade: string
   status: string
-  criadoEm: string // Formato ISO
+  criadoEm: string
 }
 
-const MOCK_CHAMADOS: ChamadoFila[] = [
-  {
-    id: '1',
-    protocolo: 'SCH-2026-0142',
-    categoria: 'Água e Esgoto',
-    endereco: 'Av. Guararapes, 100',
-    slaRestante: -3,
-    prioridade: 'Alta',
-    status: 'Em Análise',
-    criadoEm: new Date().toISOString(), // Hoje
-  },
-  {
-    id: '2',
-    protocolo: 'SCH-2026-0135',
-    categoria: 'Energia e Iluminação',
-    endereco: 'Rua Gervásio Pires, 450',
-    slaRestante: -8,
-    prioridade: 'Crítica',
-    status: 'Aberto',
-    criadoEm: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 dias atrás
-  },
-  {
-    id: '3',
-    protocolo: 'SCH-2026-0128',
-    categoria: 'Problemas na Via',
-    endereco: 'Rua Nunes Machado, 200',
-    slaRestante: 6,
-    prioridade: 'Média',
-    status: 'Em Andamento',
-    criadoEm: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 dias atrás
-  },
-  {
-    id: '4',
-    protocolo: 'SCH-2026-0121',
-    categoria: 'Saneamento Básico',
-    endereco: 'Rua da Aurora, 300',
-    slaRestante: -12,
-    prioridade: 'Alta',
-    status: 'Aguardando',
-    criadoEm: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(), // Mês passado
-  }
-]
+function calcSlaRestante(slaDeadline: string | undefined, slaHoras: number, criadoEm: string): number {
+  const deadline = slaDeadline
+    ? new Date(slaDeadline)
+    : new Date(new Date(criadoEm).getTime() + slaHoras * 3_600_000)
+  return Math.round((deadline.getTime() - Date.now()) / 3_600_000)
+}
 
 export default function FilaPage() {
   const toast = useToast()
+  const { chamadosFila, loading, error, fetchFilaChamados } = useGestorStore()
   const [selected, setSelected] = useState<string[]>([])
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [filtroPrioridade, setFiltroPrioridade] = useState('todas')
   const [filtroPeriodo, setFiltroPeriodo] = useState('todos')
   const [busca, setBusca] = useState('')
 
-  // ✅ Lógica de Filtragem e Ordenação Combinada
-  const chamadosProcessados = useMemo(() => {
+  useEffect(() => {
+    fetchFilaChamados()
+  }, [fetchFilaChamados])
+
+  const chamadosProcessados = useMemo<ChamadoFila[]>(() => {
     const agora = new Date()
     const inicioHoje = new Date(agora.setHours(0, 0, 0, 0))
     const umaSemanaAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     const umMesAtras = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-    return MOCK_CHAMADOS
+    return chamadosFila
+      .map((c): ChamadoFila => ({
+        id: c.id,
+        protocolo: c.protocolo,
+        categoria: typeof c.categoria === 'string' ? c.categoria : (c.categoria as any)?.nome ?? '',
+        endereco: c.endereco,
+        slaRestante: calcSlaRestante(c.slaDeadline, c.slaHoras, c.criadoEm),
+        prioridade: c.prioridade,
+        status: c.status,
+        criadoEm: c.criadoEm,
+      }))
       .filter((c) => {
         const matchBusca = c.protocolo.toLowerCase().includes(busca.toLowerCase()) ||
                            c.endereco.toLowerCase().includes(busca.toLowerCase())
         const matchStatus = filtroStatus === 'todos' || c.status === filtroStatus
         const matchPrioridade = filtroPrioridade === 'todas' || c.prioridade === filtroPrioridade
 
-        // Filtro de Tempo
         const dataCriacao = new Date(c.criadoEm)
         let matchPeriodo = true
         if (filtroPeriodo === 'hoje') matchPeriodo = dataCriacao >= inicioHoje
@@ -96,8 +74,8 @@ export default function FilaPage() {
 
         return matchBusca && matchStatus && matchPrioridade && matchPeriodo
       })
-      .sort((a, b) => a.slaRestante - b.slaRestante) // Ordena pelo SLA mais crítico primeiro
-  }, [busca, filtroStatus, filtroPrioridade, filtroPeriodo])
+      .sort((a, b) => a.slaRestante - b.slaRestante)
+  }, [chamadosFila, busca, filtroStatus, filtroPrioridade, filtroPeriodo])
 
   const handleSelectAll = () => {
     if (selected.length === chamadosProcessados.length) {
@@ -129,13 +107,22 @@ export default function FilaPage() {
         <Container maxW="100%">
           <VStack align="start" spacing={2}>
             <Heading size="lg">📋 Fila de Atendimento</Heading>
-            <Text opacity={0.8}>{chamadosProcessados.length} chamados encontrados com os filtros atuais</Text>
+            <Text opacity={0.8}>
+              {loading ? 'Carregando...' : `${chamadosProcessados.length} chamados encontrados com os filtros atuais`}
+            </Text>
           </VStack>
         </Container>
       </Box>
 
       <Container maxW="100%" py={6} px={4}>
         <VStack spacing={6} align="stretch">
+          {error && (
+            <Alert status="error" borderRadius="md">
+              <AlertIcon />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <Card shadow="sm" border="1px solid" borderColor="gray.200">
             <CardBody>
               <VStack spacing={4} align="stretch">
@@ -218,44 +205,58 @@ export default function FilaPage() {
                 </Tr>
               </Thead>
               <Tbody>
-                {chamadosProcessados.map((chamado) => (
-                  <Tr 
-                    key={chamado.id} 
-                    bg={selected.includes(chamado.id) ? 'blue.50' : 'transparent'}
-                    _hover={{ bg: "gray.50" }}
-                  >
-                    <Td>
-                      <Checkbox
-                        isChecked={selected.includes(chamado.id)}
-                        onChange={() => handleSelectOne(chamado.id)}
-                      />
-                    </Td>
-                    <Td fontWeight="bold" color="blue.600" fontFamily="monospace">{chamado.protocolo}</Td>
-                    <Td>{chamado.categoria}</Td>
-                    <Td maxW="220px" isTruncated fontSize="xs">{chamado.endereco}</Td>
-                    <Td><PriorityBadge priority={chamado.prioridade as any} /></Td>
-                    <Td><StatusBadge status={chamado.status as any} /></Td>
-                    <Td>
-                      <HStack spacing={1}>
-                        <Box
-                          w="8px" h="8px" borderRadius="full"
-                          bg={chamado.slaRestante < 0 ? 'red.500' : 'green.500'}
-                        />
-                        <Text fontWeight="bold" color={chamado.slaRestante < 0 ? 'red.600' : 'green.600'} fontSize="xs">
-                          {chamado.slaRestante < 0 ? `Vencido ${Math.abs(chamado.slaRestante)}h` : `${chamado.slaRestante}h restantes`}
-                        </Text>
-                      </HStack>
-                    </Td>
-                    <Td>
-                      <HStack spacing={2}>
-                        <Button size="xs" colorScheme="blue">Assumir</Button>
-                        <Link href={`/gestor/chamados/${chamado.id}`}>
-                          <Button size="xs" variant="ghost">Detalhes</Button>
-                        </Link>
-                      </HStack>
+                {loading ? (
+                  <Tr>
+                    <Td colSpan={8} textAlign="center" py={10}>
+                      <Spinner size="md" color="blue.500" />
                     </Td>
                   </Tr>
-                ))}
+                ) : chamadosProcessados.length === 0 ? (
+                  <Tr>
+                    <Td colSpan={8} textAlign="center" py={10} color="gray.400">
+                      Nenhum chamado encontrado com os filtros atuais.
+                    </Td>
+                  </Tr>
+                ) : (
+                  chamadosProcessados.map((chamado) => (
+                    <Tr
+                      key={chamado.id}
+                      bg={selected.includes(chamado.id) ? 'blue.50' : 'transparent'}
+                      _hover={{ bg: 'gray.50' }}
+                    >
+                      <Td>
+                        <Checkbox
+                          isChecked={selected.includes(chamado.id)}
+                          onChange={() => handleSelectOne(chamado.id)}
+                        />
+                      </Td>
+                      <Td fontWeight="bold" color="blue.600" fontFamily="monospace">{chamado.protocolo}</Td>
+                      <Td>{chamado.categoria}</Td>
+                      <Td maxW="220px" isTruncated fontSize="xs">{chamado.endereco}</Td>
+                      <Td><PriorityBadge priority={chamado.prioridade as any} /></Td>
+                      <Td><StatusBadge status={chamado.status as any} /></Td>
+                      <Td>
+                        <HStack spacing={1}>
+                          <Box
+                            w="8px" h="8px" borderRadius="full"
+                            bg={chamado.slaRestante < 0 ? 'red.500' : 'green.500'}
+                          />
+                          <Text fontWeight="bold" color={chamado.slaRestante < 0 ? 'red.600' : 'green.600'} fontSize="xs">
+                            {chamado.slaRestante < 0 ? `Vencido ${Math.abs(chamado.slaRestante)}h` : `${chamado.slaRestante}h restantes`}
+                          </Text>
+                        </HStack>
+                      </Td>
+                      <Td>
+                        <HStack spacing={2}>
+                          <Button size="xs" colorScheme="blue">Assumir</Button>
+                          <Link href={`/gestor/chamados/${chamado.id}`}>
+                            <Button size="xs" variant="ghost">Detalhes</Button>
+                          </Link>
+                        </HStack>
+                      </Td>
+                    </Tr>
+                  ))
+                )}
               </Tbody>
             </Table>
           </Box>

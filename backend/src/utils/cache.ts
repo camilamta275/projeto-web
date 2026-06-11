@@ -37,8 +37,8 @@ export async function deleteCache(key: string): Promise<void> {
   }
 }
 
-export function metricsScopeKey(scope: { gestorid?: string }): string {
-  return scope.gestorid ? `gestor:${scope.gestorid}` : 'platform';
+export function metricsScopeKey(scope: { orgaoid?: string }): string {
+  return scope.orgaoid ? `orgao:${scope.orgaoid}` : 'platform';
 }
 
 export function metricsCacheKeys(gestorId?: string | null): string[] {
@@ -64,6 +64,6 @@ export async function invalidateMetricsCache(gestorId?: string | null): Promise<
   await Promise.all(keys.map(deleteCache));
 }
 
-export function snapshotRedisKey(date: string, scope: { gestorid?: string }): string {
+export function snapshotRedisKey(date: string, scope: { orgaoid?: string }): string {
   return `metrics:snapshot:${date}:${metricsScopeKey(scope)}`;
 }

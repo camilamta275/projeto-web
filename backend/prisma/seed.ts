@@ -99,6 +99,14 @@ const ORGAOS: {
 const GESTOR_ID = '11111111-1111-1111-1111-111111111111'
 const CIDADAO_ID = '22222222-2222-2222-2222-222222222222'
 
+const GESTORES_ORGAOS = [
+  { id: '33333333-3333-3333-3333-333333333333', email: 'gestor.compesa@fiscalize.gov.br', nome: 'Gestor COMPESA', orgaoid: 'COMPESA', departamento: 'Saneamento Básico' },
+  { id: '44444444-4444-4444-4444-444444444444', email: 'gestor.celpe@fiscalize.gov.br',   nome: 'Gestor CELPE',   orgaoid: 'CELPE',   departamento: 'Iluminação Pública' },
+  { id: '55555555-5555-5555-5555-555555555555', email: 'gestor.cttu@fiscalize.gov.br',    nome: 'Gestor CTTU',    orgaoid: 'CTTU',    departamento: 'Trânsito e Transporte' },
+  { id: '66666666-6666-6666-6666-666666666666', email: 'gestor.sinfra@fiscalize.gov.br',  nome: 'Gestor SINFRA',  orgaoid: 'SINFRA',  departamento: 'Infraestrutura Estadual' },
+  { id: '77777777-7777-7777-7777-777777777777', email: 'gestor.semc@fiscalize.gov.br',    nome: 'Gestor SEMC',    orgaoid: 'SEMC',    departamento: 'Manutenção da Cidade' },
+]
+
 // =============================================================
 // REGRAS DE COMPETÊNCIA
 //
@@ -534,7 +542,26 @@ async function seed() {
     }
 
     // ----------------------------------------------------------
-    // 5. Cidadão de teste
+    // 5. Gestores por órgão
+    // ----------------------------------------------------------
+    const senhaGestor = await bcrypt.hash('Gestor@123456', 10)
+    let gestoresCriados = 0
+    for (const g of GESTORES_ORGAOS) {
+      const existente = await prisma.usuario.findUnique({ where: { email: g.email } })
+      if (!existente) {
+        await prisma.usuario.create({
+          data: { id: g.id, nome: g.nome, email: g.email, senha: senhaGestor, perfil: 'Gestor', status: 'Ativo' },
+        })
+        await prisma.gestor.create({
+          data: { id: g.id, orgaoid: g.orgaoid, departamento: g.departamento, telefone: '(81) 0000-0000' },
+        })
+        gestoresCriados++
+      }
+    }
+    console.log(`✓ ${GESTORES_ORGAOS.length} gestores por órgão verificados${gestoresCriados > 0 ? ` (${gestoresCriados} criados)` : ''}`)
+
+    // ----------------------------------------------------------
+    // 6. Cidadão de teste
     // ----------------------------------------------------------
     const cidadaoExistente = await prisma.usuario.findUnique({
       where: { email: 'cidadao@fiscalize.gov.br' },

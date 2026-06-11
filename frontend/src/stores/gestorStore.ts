@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import type { Chamado } from '@/types'
 import { api } from '@/lib/api'
-import { MOCK_API_BASE_URL } from '@/utils/constants'
 
 interface CategoriaDemanda {
   category: string
@@ -26,7 +25,7 @@ interface GestorState {
   error: string | null
 
   fetchMetricas: (orgaoId: string) => Promise<void>
-  fetchFilaChamados: (orgaoId: string) => Promise<void>
+  fetchFilaChamados: (orgaoId?: string) => Promise<void>
   atribuirChamado: (chamadoId: string, gestorId: string) => Promise<void>
   transferirChamado: (chamadoId: string, orgaoId: string) => Promise<void>
 }
@@ -68,14 +67,28 @@ export const useGestorStore = create<GestorState>((set) => ({
     }
   },
 
-  fetchFilaChamados: async (orgaoId: string) => {
+  fetchFilaChamados: async (_orgaoId?: string) => {
     set({ loading: true, error: null })
     try {
-      const response = await fetch(
-        `${MOCK_API_BASE_URL}/chamados?orgaoId=${orgaoId}&status=Aberto`
-      )
-      if (!response.ok) throw new Error('Erro ao buscar fila')
-      const chamados = await response.json()
+      const { data } = await api.get('/gestor/chamados', { params: { limit: 100 } })
+      const chamados: Chamado[] = (data.chamados ?? []).map((item: any) => ({
+        id: item.id,
+        protocolo: item.protocolo,
+        categoria: item.categoria?.nome ?? '',
+        subcategoria: '',
+        descricao: item.descricao,
+        status: item.status,
+        prioridade: item.prioridade,
+        orgaoId: '',
+        endereco: item.endereco,
+        latitude: Number(item.latitude ?? 0),
+        longitude: Number(item.longitude ?? 0),
+        slaHoras: item.slaHoras ?? 48,
+        slaDeadline: item.slaDeadline ? new Date(item.slaDeadline).toISOString() : undefined,
+        criadoEm: item.criadoEm,
+        atualizadoEm: item.criadoEm,
+        timeline: [],
+      }))
       set({ chamadosFila: chamados, loading: false })
     } catch (error) {
       set({

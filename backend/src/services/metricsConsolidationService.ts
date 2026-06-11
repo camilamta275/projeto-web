@@ -29,7 +29,7 @@ export interface ConsolidationResult {
   error?: string;
 }
 
-async function computeSnapshot(scope: { gestorid?: string }): Promise<MetricsSnapshotPayload> {
+async function computeSnapshot(scope: { orgaoid?: string }): Promise<MetricsSnapshotPayload> {
   const [totalByStatus, byCategory, averageResponseTime] = await Promise.all([
     metricsService.computeTotalDemands(scope),
     metricsService.computeDemandsByCategory(scope),
@@ -51,7 +51,7 @@ async function persistSnapshotToDb(payload: MetricsSnapshotPayload): Promise<voi
 }
 
 async function persistSnapshotToRedis(
-  scope: { gestorid?: string },
+  scope: { orgaoid?: string },
   payload: MetricsSnapshotPayload,
   dateKey: string,
 ): Promise<void> {
@@ -66,11 +66,11 @@ export async function runMetricsConsolidation(): Promise<ConsolidationResult> {
   const dateKey = timestamp.slice(0, 10);
 
   try {
-    const scopes: Array<{ scope: { gestorid?: string } }> = [{ scope: {} }];
+    const scopes: Array<{ scope: { orgaoid?: string } }> = [{ scope: {} }];
 
-    const gestores = await prisma.gestor.findMany({ select: { id: true } });
-    for (const gestor of gestores) {
-      scopes.push({ scope: { gestorid: gestor.id } });
+    const orgaos = await prisma.orgao.findMany({ select: { id: true } });
+    for (const orgao of orgaos) {
+      scopes.push({ scope: { orgaoid: orgao.id } });
     }
 
     const platformPayload = await computeSnapshot({});

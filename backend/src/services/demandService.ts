@@ -283,18 +283,34 @@ export const demandService = {
       throw new AppError(403, 'Usuário não possui perfil de cidadão para registrar demandas.');
     }
 
-    // 3. Resolve orgaoid, prioridade, slahoras from regra_competencia or fallbacks
-    const regra = await prisma.regra_competencia.findFirst({
-      where: { categoriaid: categoryId, subcategoria: title },
-    });
-
-    const orgaoid = await resolveOrgan(categoryId);
+    // 3. Resolve orgaoid, prioridade, slahoras via regra_competencia → orgao_categoria fallback
+    let orgaoid: string | null = null;
     let prioridade: 'Baixa' | 'Media' | 'Alta' | 'Critica' = 'Media';
     let slahoras = 48;
 
-    if (orgaoid) {
-      const orgao = await prisma.orgao.findUnique({ where: { id: orgaoid } });
-      if (orgao) slahoras = orgao.slahoras;
+    // Exact subcategoria match first, then any rule for this category
+    const regra = await prisma.regra_competencia.findFirst({
+      where: { categoriaid: categoryId, subcategoria: title },
+    }) ?? await prisma.regra_competencia.findFirst({
+      where: { categoriaid: categoryId },
+    });
+
+    if (regra) {
+      orgaoid = regra.orgaoprincipalid;
+      prioridade = regra.prioridade as typeof prioridade;
+      slahoras = regra.slahoras;
+    } else {
+      // No routing rule — fall back to orgao_categoria
+      const oc = await prisma.orgao_categoria.findFirst({
+        where: { categoriaid: categoryId },
+        include: { orgao: { select: { id: true, slahoras: true } } },
+      });
+      if (oc) {
+        orgaoid = oc.orgaoid;
+        slahoras = oc.orgao.slahoras;
+      } else {
+        console.warn(`[ROUTING] No rule or orgao_categoria found for categoryId: ${categoryId}`);
+      }
     }
 
     const protocolo = generateProtocolo();
