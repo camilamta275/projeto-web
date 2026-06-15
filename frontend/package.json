@@ -4,8 +4,8 @@
   "description": "Sistema integrado de gestão urbana de Pernambuco - Recife Inteligente",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "mock": "json-server --watch src/mocks/db.json --port 3001",
+    "dev": "next dev -p 3001",
+    "mock": "json-server --watch src/mocks/db.json --port 3002",
     "dev-with-mock": "concurrently \"npm run dev\" \"npm run mock\"",
     "build": "next build",
     "start": "next start",

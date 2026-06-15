@@ -9,22 +9,30 @@ import {
   Input,
   VStack,
   HStack,
+  SimpleGrid,
   Heading,
   Text,
   useToast,
   FormErrorMessage,
   Divider,
   Badge,
+  Link,
 } from '@chakra-ui/react'
 import { useForm } from '@/hooks'
 import { loginSchema } from '@/lib/validations'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
+import NextLink from 'next/link'
 
 const DEMO_USERS = [
-  { email: 'joao@example.com', nome: 'João Silva', perfil: 'Cidadão', color: 'blue' },
-  { email: 'joao@prefeitura.gov.br', nome: 'João da Silva Gestor', perfil: 'Gestor', color: 'green' },
-  { email: 'admin@recife.pe.gov.br', nome: 'Admin Sistema', perfil: 'Admin', color: 'purple' },
+  { email: 'cidadao@fiscalize.gov.br',       label: 'Cidadão Teste', perfil: 'Cidadão', senha: 'Cidadao@123456', color: 'blue'   },
+  { email: 'gestor@fiscalize.gov.br',         label: 'EMLURB',        perfil: 'Gestor',  senha: 'Gestor@123456',  color: 'green'  },
+  { email: 'gestor.compesa@fiscalize.gov.br', label: 'COMPESA',       perfil: 'Gestor',  senha: 'Gestor@123456',  color: 'cyan'   },
+  { email: 'gestor.celpe@fiscalize.gov.br',   label: 'CELPE',         perfil: 'Gestor',  senha: 'Gestor@123456',  color: 'yellow' },
+  { email: 'gestor.cttu@fiscalize.gov.br',    label: 'CTTU',          perfil: 'Gestor',  senha: 'Gestor@123456',  color: 'orange' },
+  { email: 'gestor.sinfra@fiscalize.gov.br',  label: 'SINFRA',        perfil: 'Gestor',  senha: 'Gestor@123456',  color: 'teal'   },
+  { email: 'gestor.semc@fiscalize.gov.br',    label: 'SEMC',          perfil: 'Gestor',  senha: 'Gestor@123456',  color: 'purple' },
+  { email: 'admin@fiscalize.gov.br',          label: 'Admin',         perfil: 'Admin',   senha: 'Admin@123456',   color: 'red'    },
 ] as const
 
 export function LoginForm() {
@@ -35,7 +43,7 @@ export function LoginForm() {
   const router = useRouter()
   const toast = useToast()
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: { email: string; password: string }) => {
     try {
       await login(data.email, data.password)
       toast({
@@ -56,9 +64,9 @@ export function LoginForm() {
     }
   }
 
-  const fillDemo = (email: string) => {
+  const fillDemo = (email: string, senha: string) => {
     setValue('email', email)
-    setValue('password', '123456')
+    setValue('password', senha)
   }
 
   return (
@@ -112,30 +120,72 @@ export function LoginForm() {
         <Box width="100%">
           <HStack mb={3}>
             <Divider />
-            <Text fontSize="xs" color="gray.400" whiteSpace="nowrap">Usuários de teste</Text>
+            <Text fontSize="xs" color="gray.400" whiteSpace="nowrap">Acesso rápido</Text>
             <Divider />
           </HStack>
-          <VStack spacing={2}>
-            {DEMO_USERS.map((u) => (
+
+          {/* Cidadão */}
+          {DEMO_USERS.filter(u => u.perfil === 'Cidadão').map((u) => (
+            <Button
+              key={u.email}
+              width="100%"
+              variant="outline"
+              size="sm"
+              colorScheme={u.color}
+              onClick={() => fillDemo(u.email, u.senha)}
+              justifyContent="space-between"
+              mb={2}
+            >
+              <Text fontSize="xs">{u.label}</Text>
+              <Badge colorScheme={u.color}>{u.perfil}</Badge>
+            </Button>
+          ))}
+
+          {/* Gestores — grid 2 colunas */}
+          <SimpleGrid columns={2} spacing={2} mb={2}>
+            {DEMO_USERS.filter(u => u.perfil === 'Gestor').map((u) => (
               <Button
                 key={u.email}
-                width="100%"
                 variant="outline"
                 size="sm"
-                onClick={() => fillDemo(u.email)}
+                colorScheme={u.color}
+                onClick={() => fillDemo(u.email, u.senha)}
                 justifyContent="space-between"
               >
-                <Text fontSize="xs" noOfLines={1}>{u.email}</Text>
-                <Badge colorScheme={u.color} ml={2} flexShrink={0}>{u.perfil}</Badge>
+                <Text fontSize="xs" fontWeight="semibold">{u.label}</Text>
+                <Badge colorScheme="green" fontSize="2xs">Gestor</Badge>
               </Button>
             ))}
-          </VStack>
+          </SimpleGrid>
+
+          {/* Admin */}
+          {DEMO_USERS.filter(u => u.perfil === 'Admin').map((u) => (
+            <Button
+              key={u.email}
+              width="100%"
+              variant="outline"
+              size="sm"
+              colorScheme={u.color}
+              onClick={() => fillDemo(u.email, u.senha)}
+              justifyContent="space-between"
+            >
+              <Text fontSize="xs">{u.label}</Text>
+              <Badge colorScheme={u.color}>{u.perfil}</Badge>
+            </Button>
+          ))}
+
           <Text fontSize="xs" color="gray.400" textAlign="center" mt={2}>
             Clique para preencher automaticamente
           </Text>
         </Box>
+
+        <Text fontSize="sm" color="gray.500">
+          Não tem uma conta?{' '}
+          <Link as={NextLink} href="/registro" color="primary.600" fontWeight="medium">
+            Criar conta
+          </Link>
+        </Text>
       </VStack>
     </Box>
   )
 }
-

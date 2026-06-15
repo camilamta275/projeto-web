@@ -27,6 +27,7 @@ model categoria {
   chamado           chamado[]
   orgao_categoria   orgao_categoria[]
   regra_competencia regra_competencia[]
+  routing_rules     routing_rules[]
 
   @@index([ativo], map: "idx_categoria_ativo")
   @@index([nome], map: "idx_categoria_nome")
@@ -40,7 +41,7 @@ model chamado {
   descricao          String
   cidadaoid          String           @db.Uuid
   gestorid           String?          @db.Uuid
-  orgaoid            String           @db.VarChar(10)
+  orgaoid            String?          @db.VarChar(10)
   categoriaid        Int
   subcategoria       String           @db.VarChar(100)
   endereco           String           @db.VarChar(255)
@@ -60,7 +61,7 @@ model chamado {
   categoria          categoria        @relation(fields: [categoriaid], references: [id], onUpdate: NoAction)
   cidadao            cidadao          @relation(fields: [cidadaoid], references: [id], onDelete: Cascade, onUpdate: NoAction)
   gestor             gestor?          @relation(fields: [gestorid], references: [id], onUpdate: NoAction)
-  orgao              orgao            @relation(fields: [orgaoid], references: [id], onUpdate: NoAction)
+  orgao              orgao?           @relation(fields: [orgaoid], references: [id], onUpdate: NoAction)
   notificacao        notificacao[]
   timeline_event     timeline_event[]
 
@@ -178,6 +179,7 @@ model orgao {
   orgao_categoria                                              orgao_categoria[]
   regra_competencia_regra_competencia_orgaoprincipalidToorgao  regra_competencia[] @relation("regra_competencia_orgaoprincipalidToorgao")
   regra_competencia_regra_competencia_orgaosecundarioidToorgao regra_competencia[] @relation("regra_competencia_orgaosecundarioidToorgao")
+  routing_rules                                                routing_rules[]
 
   @@index([sigla], map: "idx_orgao_sigla")
   @@index([status], map: "idx_orgao_status")
@@ -202,7 +204,7 @@ model regra_competencia {
   orgaoprincipalid                                 String     @db.VarChar(10)
   orgaosecundarioid                                String?    @db.VarChar(10)
   slahoras                                         Int
-  prioridade                                       prioridade @default(M_dia)
+  prioridade                                       prioridade @default(Media)
   criadoem                                         DateTime   @default(now()) @db.Timestamp(6)
   categoria                                        categoria  @relation(fields: [categoriaid], references: [id], onUpdate: NoAction)
   orgao_regra_competencia_orgaoprincipalidToorgao  orgao      @relation("regra_competencia_orgaoprincipalidToorgao", fields: [orgaoprincipalid], references: [id], onUpdate: NoAction)
@@ -250,11 +252,52 @@ model usuario {
   gestor        gestor?
   notificacao   notificacao[]
   usuario_audit usuario_audit[]
+  audit_logs    audit_logs[]  @relation("audit_logs_admin")
 
   @@index([criadoem(sort: Desc)], map: "idx_usuario_criadoem")
   @@index([email], map: "idx_usuario_email")
   @@index([perfil], map: "idx_usuario_perfil")
   @@index([status], map: "idx_usuario_status")
+}
+
+model routing_rules {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  category_id Int
+  organ_id    String    @db.VarChar(10)
+  active      Boolean   @default(true)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  categoria   categoria @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  orgao       orgao     @relation(fields: [organ_id], references: [id], onUpdate: NoAction)
+
+  @@index([category_id], map: "idx_routing_rules_category")
+  @@index([category_id, active], map: "idx_routing_rules_category_active")
+}
+
+model audit_logs {
+  id         Int      @id @default(autoincrement())
+  action     String   @db.VarChar(50)
+  entity     String   @db.VarChar(50)
+  entity_id  String   @db.VarChar(100)
+  admin_id   String   @db.Uuid
+  metadata   Json?
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  admin      usuario  @relation("audit_logs_admin", fields: [admin_id], references: [id], onUpdate: NoAction)
+
+  @@index([action], map: "idx_audit_logs_action")
+  @@index([admin_id], map: "idx_audit_logs_admin_id")
+  @@index([created_at(sort: Desc)], map: "idx_audit_logs_created_at")
+}
+
+model metrics_snapshot {
+  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  porstatus           Json
+  porcategoria        Json
+  tempomedioresolucao Decimal  @db.Decimal(10, 2)
+  jobstatus           String   @default("success") @db.VarChar(20)
+  errormessage        String?
+  criadoem            DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([criadoem(sort: Desc)], map: "idx_metrics_snapshot_criadoem")
 }
 
 model usuario_audit {
@@ -268,16 +311,16 @@ model usuario_audit {
 }
 
 enum perfil {
-  Cidad_o @map("Cidadão")
+  Cidadao @map("Cidadão")
   Gestor
   Admin
 }
 
 enum prioridade {
   Baixa
-  M_dia   @map("Média")
+  Media   @map("Média")
   Alta
-  Cr_tica @map("Crítica")
+  Critica @map("Crítica")
 }
 
 enum status_chamado {

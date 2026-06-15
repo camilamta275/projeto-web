@@ -1,13 +1,21 @@
 import { create } from 'zustand'
 import type { Chamado } from '@/types'
+import { api } from '@/lib/api'
+
+interface CategoriaDemanda {
+  category: string
+  total: number
+  percentage: number
+}
 
 interface DashboardMetricas {
   totalChamados: number
   chamadosAbertos: number
-  chamadosCriticos: number
-  slaVencido: number
-  tempoMedioResolucao: number
-  satisfacao: number
+  chamadosEmProgresso: number
+  chamadosEncerrados: number
+  demandasPorCategoria: CategoriaDemanda[]
+  tempoMedioResolucao: number | null
+  totalDemandasConsideradas: number
 }
 
 interface GestorState {
@@ -17,7 +25,7 @@ interface GestorState {
   error: string | null
 
   fetchMetricas: (orgaoId: string) => Promise<void>
-  fetchFilaChamados: (orgaoId: string) => Promise<void>
+  fetchFilaChamados: (orgaoId?: string) => Promise<void>
   atribuirChamado: (chamadoId: string, gestorId: string) => Promise<void>
   transferirChamado: (chamadoId: string, orgaoId: string) => Promise<void>
 }
@@ -31,17 +39,26 @@ export const useGestorStore = create<GestorState>((set) => ({
   fetchMetricas: async (_orgaoId: string) => {
     set({ loading: true, error: null })
     try {
-      // Aqui você buscaria as métricas da API
-      // Por enquanto, valores simulados
-      const metricas: DashboardMetricas = {
-        totalChamados: 156,
-        chamadosAbertos: 24,
-        chamadosCriticos: 3,
-        slaVencido: 5,
-        tempoMedioResolucao: 18,
-        satisfacao: 87,
-      }
-      set({ metricas, loading: false })
+      const [dashboardRes, categoriaRes, tempoRes] = await Promise.all([
+        api.get('/gestor/dashboard'),
+        api.get('/metrics/demands-by-category'),
+        api.get('/metrics/average-response-time'),
+      ])
+
+      const { chamados } = dashboardRes.data
+
+      set({
+        metricas: {
+          totalChamados: chamados.total,
+          chamadosAbertos: chamados.abertos,
+          chamadosEmProgresso: chamados.emProgresso,
+          chamadosEncerrados: chamados.encerrados,
+          demandasPorCategoria: categoriaRes.data.data,
+          tempoMedioResolucao: tempoRes.data.media_horas,
+          totalDemandasConsideradas: tempoRes.data.total_demandas_consideradas,
+        },
+        loading: false,
+      })
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -50,16 +67,28 @@ export const useGestorStore = create<GestorState>((set) => ({
     }
   },
 
-  fetchFilaChamados: async (orgaoId: string) => {
+  fetchFilaChamados: async (_orgaoId?: string) => {
     set({ loading: true, error: null })
     try {
-      const response = await fetch(
-        `http://localhost:3001/chamados?orgaoId=${orgaoId}&status=Aberto`
-      )
-      if (!response.ok) {
-        throw new Error('Erro ao buscar fila')
-      }
-      const chamados = await response.json()
+      const { data } = await api.get('/gestor/chamados', { params: { limit: 100 } })
+      const chamados: Chamado[] = (data.chamados ?? []).map((item: any) => ({
+        id: item.id,
+        protocolo: item.protocolo,
+        categoria: item.categoria?.nome ?? '',
+        subcategoria: '',
+        descricao: item.descricao,
+        status: item.status,
+        prioridade: item.prioridade,
+        orgaoId: '',
+        endereco: item.endereco,
+        latitude: Number(item.latitude ?? 0),
+        longitude: Number(item.longitude ?? 0),
+        slaHoras: item.slaHoras ?? 48,
+        slaDeadline: item.slaDeadline ? new Date(item.slaDeadline).toISOString() : undefined,
+        criadoEm: item.criadoEm,
+        atualizadoEm: item.criadoEm,
+        timeline: [],
+      }))
       set({ chamadosFila: chamados, loading: false })
     } catch (error) {
       set({
@@ -72,54 +101,30 @@ export const useGestorStore = create<GestorState>((set) => ({
   atribuirChamado: async (chamadoId: string, gestorId: string) => {
     set({ loading: true, error: null })
     try {
-      const response = await fetch(`http://localhost:3001/chamados/${chamadoId}`, {
+      const response = await fetch(`${MOCK_API_BASE_URL}/chamados/${chamadoId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gestorId,
-          status: 'Em Análise',
-          atualizadoEm: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ gestorId, status: 'Em Análise', atualizadoEm: new Date().toISOString() }),
       })
-      if (!response.ok) {
-        throw new Error('Erro ao atribuir chamado')
-      }
-      set((state) => ({
-        chamadosFila: state.chamadosFila.filter((c) => c.id !== chamadoId),
-        loading: false,
-      }))
+      if (!response.ok) throw new Error('Erro ao atribuir chamado')
+      set((state) => ({ chamadosFila: state.chamadosFila.filter((c) => c.id !== chamadoId), loading: false }))
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        loading: false,
-      })
+      set({ error: error instanceof Error ? error.message : 'Erro desconhecido', loading: false })
     }
   },
 
   transferirChamado: async (chamadoId: string, orgaoId: string) => {
     set({ loading: true, error: null })
     try {
-      const response = await fetch(`http://localhost:3001/chamados/${chamadoId}`, {
+      const response = await fetch(`${MOCK_API_BASE_URL}/chamados/${chamadoId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orgaoId,
-          status: 'Em Análise',
-          atualizadoEm: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ orgaoId, status: 'Em Análise', atualizadoEm: new Date().toISOString() }),
       })
-      if (!response.ok) {
-        throw new Error('Erro ao transferir chamado')
-      }
-      set((state) => ({
-        chamadosFila: state.chamadosFila.filter((c) => c.id !== chamadoId),
-        loading: false,
-      }))
+      if (!response.ok) throw new Error('Erro ao transferir chamado')
+      set((state) => ({ chamadosFila: state.chamadosFila.filter((c) => c.id !== chamadoId), loading: false }))
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-        loading: false,
-      })
+      set({ error: error instanceof Error ? error.message : 'Erro desconhecido', loading: false })
     }
   },
 }))

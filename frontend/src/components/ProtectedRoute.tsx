@@ -24,13 +24,24 @@ export function ProtectedRoute<P extends object>(
 ) {
   return function ProtectedComponent(props: P) {
     const router = useRouter()
-    const { usuario, isLoading } = useAuthStore()
+    const { usuario, isLoading, fetchMe, sessionChecked } = useAuthStore()
+    const [localChecked, setLocalChecked] = React.useState(false)
 
     React.useEffect(() => {
-      if (!isLoading && !usuario) {
+      if (!sessionChecked) {
+        fetchMe().finally(() => setLocalChecked(true))
+      } else {
+        setLocalChecked(true)
+      }
+    }, [fetchMe, sessionChecked])
+
+    const authReady = sessionChecked || localChecked
+
+    React.useEffect(() => {
+      if (authReady && !isLoading && !usuario) {
         router.push('/login')
       }
-    }, [usuario, isLoading, router])
+    }, [authReady, usuario, isLoading, router])
 
     // Check role if specified
     if (requiredRole && usuario) {
@@ -57,8 +68,8 @@ export function ProtectedRoute<P extends object>(
       }
     }
 
-    // Show isLoading
-    if (isLoading) {
+    // Show loading while checking session
+    if (!authReady || isLoading) {
       return (
         <Box display="flex" justifyContent="center" alignItems="center" minH="100vh">
           <Spinner size="lg" color="primary.500" />

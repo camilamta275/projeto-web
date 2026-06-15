@@ -22,16 +22,16 @@ const bottomNavItems = [
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const { usuario, isLoading } = useAuthStore()
+  const { usuario, isLoading, sessionChecked } = useAuthStore()
   const [isDesktop] = useMediaQuery('(min-width: 768px)')
 
   React.useEffect(() => {
-    if (!isLoading && (!usuario || usuario.perfil !== 'Admin')) {
+    if (sessionChecked && !isLoading && (!usuario || usuario.perfil !== 'Admin')) {
       router.push('/login')
     }
-  }, [usuario, isLoading, router])
+  }, [usuario, isLoading, sessionChecked, router])
 
-  if (isLoading) {
+  if (!sessionChecked || isLoading) {
     return null
   }
 

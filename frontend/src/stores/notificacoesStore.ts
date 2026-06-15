@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { API_BASE_URL } from '@/utils/constants'
 
 export interface Notificacao {
   id: string
@@ -31,7 +32,7 @@ export const useNotificacoesStore = create<NotificacoesStore>((set, get) => ({
     set({ loading: true })
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/notificacoes?usuarioId=${usuarioId}`
+        `${API_BASE_URL}/notificacoes?usuarioId=${usuarioId}`
       )
       if (response.ok) {
         const data = await response.json()
@@ -47,7 +48,7 @@ export const useNotificacoesStore = create<NotificacoesStore>((set, get) => ({
   marcarComoLida: async (id: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/notificacoes/${id}`,
+        `${API_BASE_URL}/notificacoes/${id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -72,7 +73,7 @@ export const useNotificacoesStore = create<NotificacoesStore>((set, get) => ({
         .filter((n) => !n.lida)
         .map((n) =>
           fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/notificacoes/${n.id}`,
+            `${API_BASE_URL}/notificacoes/${n.id}`,
             {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },

@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm install --prefix backend && npm run build --prefix backend"
+
+[deploy]
+startCommand = "npm run migrate:deploy --prefix backend && npm run start --prefix backend"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

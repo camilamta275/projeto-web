@@ -1,90 +1,188 @@
 import { create } from 'zustand'
 import type { Usuario } from '@/types'
+import { api, ApiError } from '@/lib/api'
 
-// Usuários mock para fallback quando o JSON Server não estiver disponível
+const MOCK_SESSION_KEY = 'fiscalize_mock_user'
+
 const MOCK_USUARIOS: Usuario[] = [
-  { id: '1', nome: 'João Silva', email: 'joao@example.com', perfil: 'Cidadão', status: 'Ativo', criadoEm: '2026-01-15T10:30:00Z' },
-  { id: '2', nome: 'Maria Santos', email: 'maria@example.com', perfil: 'Cidadão', status: 'Ativo', criadoEm: '2026-02-10T14:20:00Z' },
+  { id: '1', nome: 'João Silva', email: 'joao@example.com', perfil: 'Cidadão', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
   { id: '3', nome: 'João da Silva Gestor', email: 'joao@prefeitura.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
-  { id: '3b', nome: 'João da Silva Gestor', email: 'pedro@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
+  { id: '3b', nome: 'Pedro Gestor', email: 'pedro@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '1', status: 'Ativo', criadoEm: '2025-12-01T09:00:00Z' },
   { id: '4', nome: 'Ana Oliveira', email: 'ana@pmr.pe.gov.br', perfil: 'Gestor', orgaoId: '2', status: 'Ativo', criadoEm: '2025-11-15T08:30:00Z' },
   { id: '5', nome: 'Carlos Ferreira', email: 'carlos@compesa.pe.gov.br', perfil: 'Gestor', orgaoId: '3', status: 'Ativo', criadoEm: '2025-10-20T11:45:00Z' },
   { id: '6', nome: 'Admin Sistema', email: 'admin@recife.pe.gov.br', perfil: 'Admin', status: 'Ativo', criadoEm: '2025-09-01T00:00:00Z' },
 ]
 
+const MOCK_PASSWORD = '123456'
+
+function mapUsuario(data: Record<string, unknown>): Usuario {
+  const perfilMap: Record<string, 'Cidadão' | 'Gestor' | 'Admin'> = {
+    Cidadao: 'Cidadão',
+    Cidadão: 'Cidadão',
+    citizen: 'Cidadão',
+    Gestor: 'Gestor',
+    gestor: 'Gestor',
+    Admin: 'Admin',
+    admin: 'Admin',
+  }
+  const rawPerfil = (data.perfil ?? data.role ?? 'Cidadao') as string
+  const criadoEm =
+    (data.criadoem as string) ??
+    (data.criadoEm as string) ??
+    (data.created_at as string) ??
+    new Date().toISOString()
+
+  return {
+    id: String(data.id),
+    nome: String(data.nome ?? data.name ?? ''),
+    email: String(data.email ?? ''),
+    perfil: perfilMap[rawPerfil] ?? 'Cidadão',
+    status: (data.status as 'Ativo' | 'Inativo') ?? 'Ativo',
+    criadoEm,
+  }
+}
+
+function saveMockSession(usuario: Usuario) {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(usuario))
+  }
+}
+
+function loadMockSession(): Usuario | null {
+  if (typeof window === 'undefined') return null
+  const stored = sessionStorage.getItem(MOCK_SESSION_KEY)
+  if (!stored) return null
+  try {
+    return JSON.parse(stored) as Usuario
+  } catch {
+    return null
+  }
+}
+
+function clearMockSession() {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(MOCK_SESSION_KEY)
+  }
+}
+
 interface AuthState {
   usuario: Usuario | null
-  token: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  sessionChecked: boolean
   error: string | null
-  
+
+  register: (nome: string, email: string, senha: string) => Promise<void>
   login: (email: string, senha: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
+  fetchMe: () => Promise<void>
   setUsuario: (usuario: Usuario | null) => void
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   usuario: null,
-  token: null,
   isAuthenticated: false,
   isLoading: false,
+  sessionChecked: false,
   error: null,
 
-  login: async (email: string, senha: string) => {
+  register: async (nome: string, email: string, senha: string) => {
     set({ isLoading: true, error: null })
     try {
-      // Tenta o JSON Server primeiro, cai no mock se falhar
-      let usuario: Usuario | null = null
-      try {
-        const response = await fetch('http://localhost:3001/usuarios?email=' + encodeURIComponent(email))
-        if (response.ok) {
-          const usuarios = await response.json()
-          usuario = usuarios[0] ?? null
-        }
-      } catch {
-        // JSON Server indisponível — usa dados mock locais
-        usuario = MOCK_USUARIOS.find((u) => u.email === email) ?? null
-      }
-
-      if (!usuario) {
-        // Tenta no mock mesmo que o servidor tenha respondido sem resultado
-        usuario = MOCK_USUARIOS.find((u) => u.email === email) ?? null
-      }
-
-      if (!usuario || senha !== '123456') {
-        throw new Error('E-mail ou senha incorretos')
-      }
-
-      set({
-        usuario,
-        token: 'mock-token-' + usuario.id,
-        isAuthenticated: true,
-        isLoading: false,
-      })
+      await api.post('/auth/register', { nome, email, senha })
+      set({ isLoading: false })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro ao fazer login'
-      set({
-        usuario: null,
-        token: null,
-        isAuthenticated: false,
-        error: message,
-        isLoading: false,
-      })
+      const message = error instanceof Error ? error.message : 'Erro ao criar conta'
+      set({ error: message, isLoading: false })
       throw new Error(message)
     }
   },
 
-  logout: () => {
-    set({
-      usuario: null,
-      token: null,
-      isAuthenticated: false,
-      error: null,
-    })
+  login: async (email: string, senha: string) => {
+    set({ isLoading: true, error: null })
+    try {
+      // Tenta backend real primeiro (contas registradas)
+      try {
+        const { data } = await api.post('/auth/login', { email, senha })
+        clearMockSession()
+        set({
+          usuario: mapUsuario(data),
+          isAuthenticated: true,
+          isLoading: false,
+          sessionChecked: true,
+        })
+        return
+      } catch {
+        // Continua para usuários de teste (Gestor/Admin/Cidadão mock)
+      }
+
+      const mock = MOCK_USUARIOS.find((u) => u.email === email)
+      if (!mock || senha !== MOCK_PASSWORD) {
+        throw new ApiError('E-mail ou senha incorretos', 401)
+      }
+
+      saveMockSession(mock)
+      set({
+        usuario: mock,
+        isAuthenticated: true,
+        isLoading: false,
+        sessionChecked: true,
+      })
+    } catch (error) {
+      const message =
+        error instanceof ApiError && error.statusCode === 401
+          ? 'E-mail ou senha incorretos'
+          : error instanceof Error
+            ? error.message
+            : 'Erro ao fazer login'
+      set({ usuario: null, isAuthenticated: false, error: message, isLoading: false })
+      throw new Error(message)
+    }
+  },
+
+  logout: async () => {
+    clearMockSession()
+    try {
+      await api.post('/auth/logout')
+    } catch {
+      // ignora — sessão mock ou token já inválido
+    } finally {
+      set({ usuario: null, isAuthenticated: false, error: null })
+    }
+  },
+
+  fetchMe: async () => {
+    set({ isLoading: true })
+    try {
+      const { data } = await api.get('/auth/me')
+      clearMockSession()
+      set({
+        usuario: mapUsuario(data),
+        isAuthenticated: true,
+        isLoading: false,
+        sessionChecked: true,
+      })
+    } catch {
+      const mock = loadMockSession()
+      if (mock) {
+        set({
+          usuario: mock,
+          isAuthenticated: true,
+          isLoading: false,
+          sessionChecked: true,
+        })
+      } else {
+        set({
+          usuario: null,
+          isAuthenticated: false,
+          isLoading: false,
+          sessionChecked: true,
+        })
+      }
+    }
   },
 
   setUsuario: (usuario: Usuario | null) => {
-    set({ usuario })
+    set({ usuario, isAuthenticated: usuario !== null })
   },
 }))
