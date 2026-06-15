@@ -162,6 +162,31 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchMe: async () => {
     set({ isLoading: true })
+
+    const mock = loadMockSession()
+    const hasToken =
+      typeof window !== 'undefined' && !!localStorage.getItem('token')
+
+    if (!hasToken) {
+      if (mock) {
+        set({
+          usuario: mock,
+          isAuthenticated: true,
+          isLoading: false,
+          sessionChecked: true,
+        })
+        return
+      }
+
+      set({
+        usuario: null,
+        isAuthenticated: false,
+        isLoading: false,
+        sessionChecked: true,
+      })
+      return
+    }
+
     try {
       const { data } = await api.get('/auth/me')
       clearMockSession()
@@ -177,7 +202,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           localStorage.removeItem('token')
         }
       }
-      const mock = loadMockSession()
+
       if (mock) {
         set({
           usuario: mock,
