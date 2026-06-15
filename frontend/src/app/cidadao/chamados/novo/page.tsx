@@ -53,15 +53,29 @@ export default function NovoChamadoPage() {
 
   const [step, setStep] = useState(0)
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [loadingCategorias, setLoadingCategorias] = useState(true)
   const [categoria, setCategoria] = useState<Categoria | null>(null)
   const [descricao, setDescricao] = useState('')
   const [endereco, setEndereco] = useState('')
   const [erros, setErros] = useState<{ descricao?: string; endereco?: string }>({})
 
   React.useEffect(() => {
+    setLoadingCategorias(true)
     api.get('/categories')
-      .then(({ data }) => setCategorias(data))
-      .catch(() => {})
+      .then(({ data }) => {
+        // If data is returned wrapped in a 'data' property, or directly
+        const cats = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : []
+        setCategorias(cats)
+      })
+      .catch(() => {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível carregar as categorias.',
+          status: 'error',
+          duration: 3000,
+        })
+      })
+      .finally(() => setLoadingCategorias(false))
   }, [])
 
   const validateStep1 = () => {
@@ -153,8 +167,10 @@ export default function NovoChamadoPage() {
         {step === 0 && (
           <VStack spacing={4} align="stretch">
             <Text fontWeight="medium">Qual tipo de problema você quer reportar?</Text>
-            {categorias.length === 0 ? (
+            {loadingCategorias ? (
               <Spinner alignSelf="center" />
+            ) : categorias.length === 0 ? (
+              <Text color="gray.500" textAlign="center">Nenhuma categoria encontrada.</Text>
             ) : (
               <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={3}>
                 {categorias.map((cat) => (
