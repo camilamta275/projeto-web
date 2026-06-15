@@ -65,6 +65,12 @@ function clearMockSession() {
   }
 }
 
+let fetchMeGeneration = 0
+
+function invalidateFetchMe() {
+  fetchMeGeneration += 1
+}
+
 interface AuthState {
   usuario: Usuario | null
   isAuthenticated: boolean
@@ -99,14 +105,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   login: async (email: string, senha: string) => {
+    invalidateFetchMe()
     set({ isLoading: true, error: null })
     try {
       // Tenta backend real primeiro (contas registradas)
       try {
         const { data } = await api.post('/auth/login', { email, senha })
-        if (typeof window !== 'undefined' && data.token) {
-          localStorage.setItem('token', data.token)
+        if (typeof window === 'undefined' || !data.token) {
+          throw new ApiError('Servidor não retornou token de autenticação', 500)
         }
+        localStorage.setItem('token', data.token)
         clearMockSession()
         set({
           usuario: mapUsuario(data),
@@ -161,6 +169,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   fetchMe: async () => {
+    const generation = ++fetchMeGeneration
     set({ isLoading: true })
 
     const mock = loadMockSession()
@@ -189,6 +198,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const { data } = await api.get('/auth/me')
+      if (generation !== fetchMeGeneration) return
+
       clearMockSession()
       set({
         usuario: mapUsuario(data),
@@ -197,6 +208,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         sessionChecked: true,
       })
     } catch (error) {
+      if (generation !== fetchMeGeneration) return
+
       if (error instanceof ApiError && error.statusCode === 401) {
         if (typeof window !== 'undefined') {
           localStorage.removeItem('token')

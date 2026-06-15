@@ -43,13 +43,6 @@ export const authController = {
       
       const { usuario, token } = await authService.login(email, senha);
 
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000,
-      });
-
       res.status(200).json({
         id: usuario.id,
         nome: usuario.nome,
