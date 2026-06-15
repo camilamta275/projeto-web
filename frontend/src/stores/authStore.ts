@@ -104,6 +104,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       // Tenta backend real primeiro (contas registradas)
       try {
         const { data } = await api.post('/auth/login', { email, senha })
+        if (typeof window !== 'undefined' && data.token) {
+          localStorage.setItem('token', data.token)
+        }
         clearMockSession()
         set({
           usuario: mapUsuario(data),
@@ -121,6 +124,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new ApiError('E-mail ou senha incorretos', 401)
       }
 
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token')
+      }
       saveMockSession(mock)
       set({
         usuario: mock,
@@ -142,6 +148,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     clearMockSession()
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token')
+    }
     try {
       await api.post('/auth/logout')
     } catch {
@@ -162,7 +171,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
         sessionChecked: true,
       })
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 401) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token')
+        }
+      }
       const mock = loadMockSession()
       if (mock) {
         set({

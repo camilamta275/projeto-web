@@ -50,7 +50,13 @@ export const authController = {
         maxAge: 24 * 60 * 60 * 1000,
       });
 
-      res.status(200).json({ id: usuario.id, nome: usuario.nome, email: usuario.email, perfil: usuario.perfil });
+      res.status(200).json({
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        perfil: usuario.perfil,
+        token,
+      });
     } catch (error) {
       next(error);
     }
@@ -58,13 +64,17 @@ export const authController = {
 
   async logout(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const token = req.cookies.token;
-      
-      // Remove o cookie
+      let token = req.cookies.token;
+
+      if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+        token = req.headers.authorization.substring(7);
+      }
+
       res.clearCookie('token');
-      
-      // Adiciona token à blocklist
-      await authService.addTokenToBlocklist(token);
+
+      if (token) {
+        await authService.addTokenToBlocklist(token);
+      }
       
       res.status(200).json({ message: 'Logout realizado com sucesso' });
     } catch (error) {
