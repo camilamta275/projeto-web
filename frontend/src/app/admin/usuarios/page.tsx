@@ -1,5 +1,6 @@
 'use client'
 
+
 import React from 'react'
 import {
   Box,
@@ -34,6 +35,7 @@ import {
   InputRightElement,
 } from '@chakra-ui/react'
 import { AddIcon, DeleteIcon, EditIcon, ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
+import { api } from '@/lib/api'
 
 interface Usuario {
   id: string
@@ -47,86 +49,72 @@ interface Usuario {
   senhaTemparia?: string
 }
 
-const usuariosInitial: Usuario[] = [
-  {
-    id: '1',
-    nome: 'Maria Santos',
-    email: 'maria@example.com',
-    perfil: 'cidadao',
-    status: 'ativo',
-    dataCadastro: '2026-01-15',
-  },
-  {
-    id: '2',
-    nome: 'Pedro Silva',
-    email: 'pedro@pmr.pe.gov.br',
-    perfil: 'gestor',
-    orgao: 'PMR',
-    setor: 'Obras',
-    status: 'ativo',
-    dataCadastro: '2026-01-10',
-  },
-  {
-    id: '3',
-    nome: 'João Santos',
-    email: 'joao@compesa.com.br',
-    perfil: 'gestor',
-    orgao: 'COMPESA',
-    setor: 'Técnico',
-    status: 'ativo',
-    dataCadastro: '2026-02-01',
-  },
-  {
-    id: '4',
-    nome: 'Admin Recife',
-    email: 'admin@recife.pe.gov.br',
-    perfil: 'admin',
-    status: 'ativo',
-    dataCadastro: '2025-12-01',
-  },
-  {
-    id: '5',
-    nome: 'Carlos Oliveira',
-    email: 'carlos@example.com',
-    perfil: 'cidadao',
-    status: 'inativo',
-    dataCadastro: '2026-02-15',
-  },
-  {
-    id: '6',
-    nome: 'Lucia Silva',
-    email: 'lucia@energisa.com.br',
-    perfil: 'gestor',
-    orgao: 'Energisa',
-    setor: 'Atendimento',
-    status: 'ativo',
-    dataCadastro: '2026-02-20',
-  },
-]
-
 const ORGAO_OPTIONS = ['PMR', 'COMPESA', 'Energisa', 'DETRAN-PE', 'GOPE']
-
-const gerarSenhaTemporaria = () => {
-  return Math.random().toString(36).substring(2, 10).toUpperCase()
-}
 
 export default function UsuariosPage() {
   const toast = useToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const [usuarios, setUsuarios] = React.useState<Usuario[]>(usuariosInitial)
+
+  const [usuarios, setUsuarios] = React.useState<Usuario[]>([])
+  const [loading, setLoading] = React.useState(false)
+
   const [editando, setEditando] = React.useState<Usuario | null>(null)
   const [formData, setFormData] = React.useState<Partial<Usuario>>({})
+  const [mostrarSenha, setMostrarSenha] = React.useState(false)
+
   const [filtroPerfil, setFiltroPerfil] = React.useState('todos')
   const [filtroOrgao, setFiltroOrgao] = React.useState('todos')
   const [filtroStatus, setFiltroStatus] = React.useState('todos')
   const [busca, setBusca] = React.useState('')
-  const [mostrarSenha, setMostrarSenha] = React.useState(false)
+
+  const carregarUsuarios = async () => {
+    try {
+      setLoading(true)
+
+      const response = await api.get('/admin/users')
+
+      const usuariosFormatados = response.data.usuarios.map((user: any) => ({
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        perfil: user.perfil.toLowerCase(),
+        status: user.status.toLowerCase(),
+        dataCadastro: new Date(user.criadoem)
+          .toISOString()
+          .split('T')[0],
+      }))
+
+      setUsuarios(usuariosFormatados)
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar usuários',
+        description:
+          error.response?.data?.error ||
+          error.message ||
+          'Erro desconhecido',
+        status: 'error',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  React.useEffect(() => {
+    carregarUsuarios()
+  }, [])
 
   const handleAdicionarUsuario = () => {
     setEditando(null)
+
     setFormData({
-      senhaTemparia: gerarSenhaTemporaria(),
+      nome: '',
+      email: '',
+      perfil: 'cidadao',
+      senhaTemparia: Math.random()
+        .toString(36)
+        .slice(-10),
     })
+
     onOpen()
   }
 
@@ -136,60 +124,118 @@ export default function UsuariosPage() {
     onOpen()
   }
 
-  const handleSalvar = () => {
-    if (!formData.nome || !formData.email || !formData.perfil) {
-      toast({
-        title: 'Preencha todos os campos obrigatórios',
-        status: 'warning',
-      })
-      return
-    }
+  const handleSalvar = async () => {
+    try {
+      if (editando) {
+        await api.patch(
+          `/admin/users/${editando.id}/role`,
+          {
+            role:
+              formData.perfil === 'cidadao'
+                ? 'Cidadao'
+                : 'Gestor',
+          }
+        )
 
-    if (editando) {
-      setUsuarios(usuarios.map((u) => (u.id === editando.id ? { ...editando, ...formData } : u)))
+        toast({
+          title: 'Perfil atualizado com sucesso',
+          status: 'success',
+        })
+      } else {
+        await api.post('/admin/users', {
+          name: formData.nome,
+          email: formData.email,
+          password: formData.senhaTemparia,
+          role:
+            formData.perfil === 'cidadao'
+              ? 'Cidadao'
+              : 'Gestor',
+        })
+
+        toast({
+          title: 'Usuário criado com sucesso',
+          status: 'success',
+        })
+      }
+
+      onClose()
+      carregarUsuarios()
+    } catch (error: any) {
       toast({
-        title: 'Usuário atualizado',
-        status: 'success',
-      })
-    } else {
-      const novoUsuario: Usuario = {
-        id: Date.now().toString(),
-        status: 'ativo',
-        dataCadastro: new Date().toISOString().split('T')[0],
-        ...formData,
-      } as Usuario
-      setUsuarios([...usuarios, novoUsuario])
-      toast({
-        title: 'Usuário adicionado',
-        description: `Senha temporária: ${formData.senhaTemparia}`,
-        status: 'success',
-        duration: 5,
+        title: 'Erro',
+        description:
+          error.response?.data?.error ||
+          error.message,
+        status: 'error',
       })
     }
-
-    onClose()
   }
 
-  const handleToggleStatus = (id: string) => {
-    setUsuarios(
-      usuarios.map((u) => (u.id === id ? { ...u, status: u.status === 'ativo' ? 'inativo' : 'ativo' } : u))
-    )
-    toast({
-      title: 'Status atualizado',
-      status: 'success',
-    })
+  const handleToggleStatus = async (
+    usuario: Usuario
+  ) => {
+    try {
+      if (usuario.status === 'ativo') {
+        await api.patch(
+          `/admin/users/${usuario.id}/deactivate`
+        )
+
+        toast({
+          title: 'Usuário desativado',
+          status: 'success',
+        })
+      } else {
+        await api.patch(
+          `/admin/users/${usuario.id}/activate`
+        )
+
+        toast({
+          title: 'Usuário ativado',
+          status: 'success',
+        })
+      }
+
+      carregarUsuarios()
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description:
+          error.response?.data?.error ||
+          error.message,
+        status: 'error',
+      })
+    }
   }
 
   const usuariosFiltrados = usuarios.filter((u) => {
     const matchBusca =
       u.nome.toLowerCase().includes(busca.toLowerCase()) ||
       u.email.toLowerCase().includes(busca.toLowerCase())
-    const matchPerfil = filtroPerfil === 'todos' || u.perfil === filtroPerfil
-    const matchOrgao = filtroOrgao === 'todos' || u.orgao === filtroOrgao
-    const matchStatus = filtroStatus === 'todos' || u.status === filtroStatus
 
-    return matchBusca && matchPerfil && matchOrgao && matchStatus
+    const matchPerfil =
+      filtroPerfil === 'todos' || u.perfil === filtroPerfil
+
+    const matchOrgao =
+      filtroOrgao === 'todos' || u.orgao === filtroOrgao
+
+    const matchStatus =
+      filtroStatus === 'todos' || u.status === filtroStatus
+
+    return (
+      matchBusca &&
+      matchPerfil &&
+      matchOrgao &&
+      matchStatus
+    )
   })
+
+  if (loading) {
+    return (
+      <Box p={8}>
+        <Text>Carregando usuários...</Text>
+      </Box>
+    )
+  }
 
   return (
     <Box bg="gray.50" minH="100vh">
@@ -342,7 +388,7 @@ export default function UsuariosPage() {
                             size="sm"
                             colorScheme={usuario.status === 'ativo' ? 'red' : 'green'}
                             variant="ghost"
-                            onClick={() => handleToggleStatus(usuario.id)}
+                            onClick={() => handleToggleStatus(usuario)}
                           />
                         </HStack>
                       </Td>
