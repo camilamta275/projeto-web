@@ -15,14 +15,14 @@
     "test:watch": "jest --watch",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "npx ts-node prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "npx ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
