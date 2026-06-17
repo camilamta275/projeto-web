@@ -14,6 +14,7 @@ import { healthCheckHandler } from './config/health';
 import { connectPrisma, disconnectPrisma } from './config/prisma';
 import { isRedisAvailable } from './config/redis';
 import { NODE_ENV, PORT } from './config/env';
+import { openApiSpec, swaggerHtml } from './config/swagger';
 import 'dotenv/config';
 
 const app = express();
@@ -24,6 +25,17 @@ app.use(cookieParser());
 
 app.get('/health', (req, res) => {
   void healthCheckHandler(req, res);
+});
+
+// Documentação Swagger / OpenAPI (sem autenticação)
+//   GET /docs       → interface Swagger UI
+//   GET /docs.json  → especificação OpenAPI crua
+app.get('/docs.json', (_req, res) => {
+  res.json(openApiSpec);
+});
+
+app.get('/docs', (_req, res) => {
+  res.type('html').send(swaggerHtml);
 });
 
 app.use('/auth', authRoutes);
@@ -46,6 +58,7 @@ async function startServer(): Promise<void> {
     console.log(`[Server] NODE_ENV=${NODE_ENV}`);
     console.log(`[Server] Redis: ${redisAvailable ? 'available' : 'unavailable'}`);
     console.log(`[Server] Health check: http://localhost:${PORT}/health`);
+    console.log(`[Server] API docs (Swagger): http://localhost:${PORT}/docs`);
     registerCronJobs();
   });
 
