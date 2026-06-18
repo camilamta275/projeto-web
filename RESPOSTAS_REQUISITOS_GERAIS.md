@@ -2,6 +2,7 @@
 
 **Projeto:** Fiscalize — Plataforma de Governança Digital para Gestão de Demandas Urbanas
 **Stack:** Next.js 14 (App Router) + TypeScript + Chakra UI + Zustand (frontend); Express 5 + Prisma 7 + PostgreSQL + Redis (backend); Docker.
+
 **Time:** Alessandra Barbosa, Ana Sofia Moura, Camila Teixeira, Maria Gabriela Damásio, Raphael Rennan Miranda, Rayane Santos e René Lucena.
 
 ---
