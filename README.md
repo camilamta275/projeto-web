@@ -1,5 +1,14 @@
 # Fiscalize - Sistema Integrado de Gestão Urbana de Pernambuco
 
+## Criado por:
+- **Alessandra Barbosa**
+- **Ana Sofia**
+- **Camila Teixeira**
+- **Maria Gabriela**
+- **René Lucena**
+- **Raphael Miranda**
+- **Rayane Cavalcanti**
+
 ## 🎯 Visão Geral
 
 Fiscalize é um sistema web completo construído com as tecnologias mais modernas do mercado, permitindo que cidadãos reportem problemas urbanos, gestores acompanhem e resolvam demandas, e inspetores coordenem ações.
