@@ -29,10 +29,22 @@ Fiscalize é um sistema web completo construído com as tecnologias mais moderna
 ### Pré-requisitos
 - Node.js 18+
 - npm, yarn, ou bun
+- Git 2.13+ (o backend é um **submodule**)
 
 ### Passos
 
-1. **Instale as dependências**
+1. **Clone o repositório com o submodule do backend**
+```bash
+git clone --recurse-submodules https://github.com/camilamta275/projeto-web.git
+cd projeto-web
+```
+
+Se você já clonou o repositório sem `--recurse-submodules`, popule o backend com:
+```bash
+git submodule update --init --recursive
+```
+
+2. **Instale as dependências**
 ```bash
 npm install
 # ou
@@ -41,7 +53,7 @@ yarn install
 bun install
 ```
 
-2. **Inicie o servidor de desenvolvimento**
+3. **Inicie o servidor de desenvolvimento**
 ```bash
 npm run dev
 # ou
@@ -50,31 +62,38 @@ yarn dev
 bun dev
 ```
 
-3. **Abra o navegador**
+4. **Abra o navegador**
 Acesse [http://localhost:3001](http://localhost:3001)
+
+> O backend vive em um repositório separado: **[fiscalize-backend](https://github.com/rapheto/fiscalize-backend)**.
+> Instruções de instalação, variáveis de ambiente e execução do backend estão em [`backend/README.md`](backend/README.md).
+
+### 🔗 Trabalhando com o submodule do backend
+
+```bash
+# Atualizar o backend para o último commit do repositório remoto
+git submodule update --remote backend
+git add backend && git commit -m "chore: atualiza submodule do backend"
+
+# Fazer alterações no backend
+cd backend
+git checkout main            # submodules vêm em detached HEAD por padrão
+# ... edite, commit e push normalmente (vai para fiscalize-backend)
+git push
+
+# De volta na raiz, registre o novo commit do backend
+cd ..
+git add backend && git commit -m "chore: aponta backend para <novo-commit>"
+```
 
 ## 📁 Estrutura do Projeto
 
 ```
 projeto-web/
-├── backend/                          # API Node.js + Express + Prisma
-│   ├── prisma/
-│   │   └── schema.prisma            # Modelo de dados (Prisma)
-│   ├── src/
-│   │   ├── controllers/             # Controladores HTTP
-│   │   │   └── authController.ts
-│   │   ├── middlewares/             # Middlewares Express
-│   │   │   └── authMiddleware.ts
-│   │   ├── routes/                  # Definição de rotas
-│   │   │   └── authRoutes.ts
-│   │   ├── services/                # Regras de negócio
-│   │   │   └── authService.ts
-│   │   └── server.ts                # Entry point do servidor
-│   ├── .env.example
-│   ├── COMO_RODAR_O_BACK.md
-│   ├── package.json
-│   ├── prisma.config.ts
-│   └── tsconfig.json
+├── backend/                          # 🔗 Git submodule → fiscalize-backend
+│                                     # API Node.js + Express + Prisma
+│                                     # Repositório: https://github.com/rapheto/fiscalize-backend
+│                                     # Documentação: backend/README.md
 │
 ├── frontend/                         # Aplicação Next.js 14 (App Router)
 │   ├── src/
