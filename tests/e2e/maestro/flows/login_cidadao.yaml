@@ -1,12 +1,11 @@
 url: http://localhost:3001/login
 tags:
   - auth
+env:
+  EMAIL: cidadao@fiscalize.gov.br
+  SENHA: Cidadao@123456
 ---
 - clearState
 - launchApp
-- tapOn: "seu@email.com"
-- inputText: "cidadao@fiscalize.gov.br"
-- tapOn: "qualquer senha"
-- inputText: "Cidadao@123456"
-- tapOn: "Entrar"
+- runFlow: ../subflows/login.yaml
 - assertVisible: "Meus Chamados"
