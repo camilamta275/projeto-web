@@ -1,0 +1,8 @@
+url: http://localhost:3001
+tags:
+  - smoke
+---
+- clearState
+- launchApp
+- assertVisible: "Fiscalize"
+- assertVisible: "Entrar"

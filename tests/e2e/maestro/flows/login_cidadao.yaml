@@ -1,0 +1,12 @@
+url: http://localhost:3001/login
+tags:
+  - auth
+---
+- clearState
+- launchApp
+- tapOn: "seu@email.com"
+- inputText: "cidadao@fiscalize.gov.br"
+- tapOn: "qualquer senha"
+- inputText: "Cidadao@123456"
+- tapOn: "Entrar"
+- assertVisible: "Meus Chamados"
