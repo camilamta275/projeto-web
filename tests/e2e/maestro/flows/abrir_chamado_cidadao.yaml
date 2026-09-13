@@ -1,0 +1,29 @@
+url: http://localhost:3001/login
+tags:
+  - cidadao
+  - chamado
+env:
+  EMAIL: cidadao@fiscalize.gov.br
+  SENHA: Cidadao@123456
+  DESCRICAO: Existe um buraco grande na via causando risco aos motoristas e pedestres.
+  ENDERECO: Rua dos Palmares, 123, Boa Vista, Recife - PE
+---
+- clearState
+- launchApp
+- runFlow: ../subflows/login.yaml
+- assertVisible: "Meus Chamados"
+- tapOn: "Novo chamado"
+- assertVisible: "Novo Chamado"
+- tapOn: "Infraestrutura"
+- tapOn: "Próximo →"
+- assertVisible: "Descrição do Problema"
+- tapOn: "Descreva o problema detalhadamente. Ex: Há um buraco grande que ocupa metade da faixa da direita desde segunda-feira, causando risco aos motoristas..."
+- inputText: ${DESCRICAO}
+- tapOn: "Ex: Rua dos Palmares, 123, Boa Vista, Recife - PE"
+- inputText: ${ENDERECO}
+- tapOn: "Próximo →"
+- assertVisible: "Revise os dados antes de enviar:"
+- assertVisible: "Existe um buraco grande na via causando risco aos motoristas e pedestres."
+- assertVisible: "Rua dos Palmares, 123, Boa Vista, Recife - PE"
+- tapOn: "✓ Abrir Chamado"
+- assertVisible: "Meus Chamados"
