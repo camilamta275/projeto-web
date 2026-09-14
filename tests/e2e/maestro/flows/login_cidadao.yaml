@@ -1,0 +1,11 @@
+url: http://localhost:3001/login
+tags:
+  - auth
+env:
+  EMAIL: cidadao@fiscalize.gov.br
+  SENHA: Cidadao@123456
+---
+- clearState
+- launchApp
+- runFlow: ../subflows/login.yaml
+- assertVisible: "Meus Chamados"

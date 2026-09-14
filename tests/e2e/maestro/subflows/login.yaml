@@ -1,0 +1,7 @@
+url: http://localhost:3001/login
+---
+- tapOn: "seu@email.com"
+- inputText: ${EMAIL}
+- tapOn: "qualquer senha"
+- inputText: ${SENHA}
+- tapOn: "Entrar"
