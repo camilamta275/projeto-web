@@ -1,0 +1,13 @@
+url: http://localhost:3001/login
+tags:
+  - cidadao
+  - chamados
+env:
+  EMAIL: joao@example.com
+  SENHA: 123456
+---
+- clearState
+- launchApp
+- runFlow: ../../subflows/login.yaml
+- assertVisible: "Meus Chamados"
+- assertVisible: "SCH-2026-0013"
