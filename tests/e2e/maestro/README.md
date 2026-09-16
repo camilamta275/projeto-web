@@ -11,8 +11,7 @@ tests/e2e/maestro/
 │   └── login.yaml          # login reutilizável, recebe EMAIL/SENHA como env
 └── flows/
     ├── smoke_home_redirects_to_login.yaml   # smoke test: "/" redireciona pra /login
-    ├── login_cidadao.yaml                   # login como cidadão, via subflow + assert do dashboard
-    └── gestor_resolve_chamado.yaml          # login como gestor EMLURB, resolve um chamado na fila
+    ├── login_cidadao.yaml                   # login como cidadão, via subflow + assert do dashboard    ├── admin_criar_orgao.yaml               # login como admin, cria um novo órgão e valida o card na tela    └── gestor_resolve_chamado.yaml          # login como gestor EMLURB, resolve um chamado na fila
 ```
 
 ## Pré-requisitos
@@ -26,6 +25,7 @@ tests/e2e/maestro/
 ```bash
 maestro test tests/e2e/maestro/flows/smoke_home_redirects_to_login.yaml
 maestro test tests/e2e/maestro/flows/login_cidadao.yaml
+maestro test tests/e2e/maestro/flows/admin_criar_orgao.yaml
 maestro test tests/e2e/maestro/flows/gestor_resolve_chamado.yaml
 
 # todos de uma vez
@@ -57,6 +57,12 @@ env:
 ```
 
 Importante: o subflow precisa de um `url:` no cabeçalho (mesma URL do flow pai) — o parser do Maestro exige esse campo em todo arquivo de flow quando rodando web, mesmo em subflows chamados via `runFlow`.
+
+## admin_criar_orgao.yaml
+
+Login como admin (`admin@fiscalize.gov.br`), entra na tela de órgãos, cria um novo cadastro com sigla única (`FISX`) e categoria `Infraestrutura`, e valida que o card do órgão aparece na lista.
+
+Esse cenário cobre um fluxo administrativo ainda não testado e serve como garantia de regressão para a criação de órgãos e a navegação autenticada do painel admin.
 
 ## gestor_resolve_chamado.yaml
 

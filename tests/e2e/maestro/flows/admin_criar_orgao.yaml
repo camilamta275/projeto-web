@@ -1,0 +1,34 @@
+url: http://localhost:3001/login
+tags:
+  - admin
+  - orgao
+  - smoke
+---
+- clearState
+- launchApp
+- tapOn: "Email"
+- inputText: "admin@fiscalize.gov.br"
+- tapOn: "Senha"
+- inputText: "Admin@123456"
+- tapOn: "Entrar"
+- assertVisible: "Órgãos"
+- tapOn: "Novo Órgão"
+- tapOn: "Sigla *"
+- inputText: "FISX"
+- tapOn: "Nome *"
+- inputText: "Órgão de Teste E2E"
+- tapOn: "Selecione..."
+- tapOn: "Municipal"
+- tapOn: "SLA Padrão (horas) *"
+- inputText: "72"
+- tapOn: "Responsável *"
+- inputText: "Ana Sofia"
+- tapOn: "Email *"
+- inputText: "contato@fiscx.gov.br"
+- tapOn: "Infraestrutura"
+- scrollUntilVisible:
+    element:
+      text: "Adicionar"
+    direction: DOWN
+- tapOn: "Adicionar"
+- assertVisible: "FISX"
