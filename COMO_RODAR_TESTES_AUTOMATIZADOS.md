@@ -53,6 +53,7 @@ cypress/
  ├── e2e/
  │    ├── login.cy.js
  │    └── chamado.cy.js
+ |    └── concluir_chamado_gestor.cy.js
  ├── fixtures/
  └── support/
 ```
