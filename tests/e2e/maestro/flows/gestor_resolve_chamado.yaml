@@ -1,0 +1,33 @@
+url: http://localhost:3001/login
+tags:
+  - gestor
+env:
+  EMAIL: gestor@fiscalize.gov.br
+  SENHA: Gestor@123456
+---
+- clearState
+- launchApp
+- runFlow: ../subflows/login.yaml
+- assertVisible: "Fila"
+- tapOn: "Fila"
+- assertVisible: ".*Fila de Atendimento.*"
+- tapOn: "Protocolo ou endereço..."
+- inputText: "DEM-SEED-004"
+- assertVisible: "DEM-SEED-004"
+- scrollUntilVisible:
+    element:
+      text: "Detalhes"
+    direction: RIGHT
+- tapOn: "Detalhes"
+- assertVisible: "DEM-SEED-004"
+- assertVisible: "Em Andamento"
+- scrollUntilVisible:
+    element:
+      text: ".*Concluir.*"
+    direction: DOWN
+- tapOn: ".*Concluir.*"
+- assertVisible: ".*Concluir Chamado.*"
+- tapOn: "Ex: Buraco tapado, serviço concluído em 24h..."
+- inputText: "Recapeamento asfáltico concluído na Av. Agamenon Magalhães. Via liberada ao tráfego, sinalização de obra retirada e trecho vistoriado pela equipe de pavimentação."
+- tapOn: "Confirmar Conclusão"
+- assertVisible: "Resolvido"

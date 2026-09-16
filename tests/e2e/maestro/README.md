@@ -11,7 +11,8 @@ tests/e2e/maestro/
 │   └── login.yaml          # login reutilizável, recebe EMAIL/SENHA como env
 └── flows/
     ├── smoke_home_redirects_to_login.yaml   # smoke test: "/" redireciona pra /login
-    └── login_cidadao.yaml                   # login como cidadão, via subflow + assert do dashboard
+    ├── login_cidadao.yaml                   # login como cidadão, via subflow + assert do dashboard
+    └── gestor_resolve_chamado.yaml          # login como gestor EMLURB, resolve um chamado na fila
 ```
 
 ## Pré-requisitos
@@ -25,6 +26,7 @@ tests/e2e/maestro/
 ```bash
 maestro test tests/e2e/maestro/flows/smoke_home_redirects_to_login.yaml
 maestro test tests/e2e/maestro/flows/login_cidadao.yaml
+maestro test tests/e2e/maestro/flows/gestor_resolve_chamado.yaml
 
 # todos de uma vez
 maestro test tests/e2e/maestro/
@@ -55,6 +57,16 @@ env:
 ```
 
 Importante: o subflow precisa de um `url:` no cabeçalho (mesma URL do flow pai) — o parser do Maestro exige esse campo em todo arquivo de flow quando rodando web, mesmo em subflows chamados via `runFlow`.
+
+## gestor_resolve_chamado.yaml
+
+Login como gestor EMLURB (`gestor@fiscalize.gov.br`), acessa a fila, busca o chamado `DEM-SEED-004` (status `Em Andamento` no seed), abre os detalhes, clica em "Concluir", preenche a justificativa e confirma. No fim, verifica que o status virou `Resolvido`.
+
+Importante: esse flow **muda dado real no banco** (marca `DEM-SEED-004` como `Resolvido`). Ele não é idempotente, rodar de novo sem resetar o status falha na asserção "Em Andamento" porque o chamado já estará resolvido. Para rodar de novo, resete o status antes:
+
+```sql
+UPDATE chamado SET status = 'Em Andamento' WHERE protocolo = 'DEM-SEED-004';
+```
 
 ## Notas
 
