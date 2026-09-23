@@ -12,6 +12,7 @@ tests/e2e/maestro/
 └── flows/
     ├── smoke_home_redirects_to_login.yaml   # smoke test: "/" redireciona pra /login
     ├── login_cidadao.yaml                   # login como cidadão, via subflow + assert do dashboard
+    ├── login_invalido.yaml                  # login com senha errada, valida mensagem de erro (TC02)
     └── gestor_resolve_chamado.yaml          # login como gestor EMLURB, resolve um chamado na fila
 ```
 
@@ -26,6 +27,7 @@ tests/e2e/maestro/
 ```bash
 maestro test tests/e2e/maestro/flows/smoke_home_redirects_to_login.yaml
 maestro test tests/e2e/maestro/flows/login_cidadao.yaml
+maestro test tests/e2e/maestro/flows/login_invalido.yaml
 maestro test tests/e2e/maestro/flows/gestor_resolve_chamado.yaml
 
 # todos de uma vez
@@ -57,6 +59,12 @@ env:
 ```
 
 Importante: o subflow precisa de um `url:` no cabeçalho (mesma URL do flow pai) — o parser do Maestro exige esse campo em todo arquivo de flow quando rodando web, mesmo em subflows chamados via `runFlow`.
+
+## login_invalido.yaml
+
+Tenta logar com o e-mail real do cidadão (`cidadao@fiscalize.gov.br`) e uma senha errada, e valida que a aplicação mostra o erro (`Erro ao entrar` / `E-mail ou senha incorretos`) sem deixar o usuário passar da tela de login.
+
+Cobre o TC02 do plano de automação do grupo ("Login com senha inválida"), que ainda não tinha teste E2E.
 
 ## gestor_resolve_chamado.yaml
 
