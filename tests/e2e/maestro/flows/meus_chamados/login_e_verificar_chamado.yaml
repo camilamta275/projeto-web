@@ -1,0 +1,19 @@
+url: http://localhost:3001/login
+tags:
+  - cidadao
+  - chamados
+env:
+  EMAIL: joao@example.com
+  SENHA: 123456
+---
+- clearState
+- launchApp
+- runFlow: ../../subflows/login.yaml
+- assertVisible: "Meus Chamados"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "SCH-2026-0013"
+    timeout: 20000
+- tapOn: "SCH-2026-0013"
+- assertVisible: "SCH-2026-0013"
+- assertVisible: "Encanamento público entupido na Rua da Paz causando retorno de esgoto para dentro de residências no condomínio"
