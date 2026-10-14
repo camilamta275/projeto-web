@@ -1,0 +1,16 @@
+url: http://localhost:3001/login
+tags:
+  - cidadao
+  - auth
+  - negative
+---
+- clearState
+- launchApp
+- tapOn: "seu@email.com"
+- inputText: "cidadao@fiscalize.gov.br"
+- tapOn: "qualquer senha"
+- inputText: "SenhaErrada123"
+- tapOn: "Entrar"
+- assertVisible: "Erro ao entrar"
+- assertVisible: "E-mail ou senha incorretos"
+- assertVisible: "Entrar"
