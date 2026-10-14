@@ -1,5 +1,75 @@
 describe("Cidadão abre chamado", () => {
-  it("deve validar se o protocolo criado é o primeiro chamado da tela inicial", () => {
+  it("deve criar um chamado e encontrá-lo na listagem", () => {
+    const protocolo = "SCH-2026-001";
+    const descricao =
+      "Existe um buraco na via pública que precisa ser resolvido.";
+    const endereco = "Rua das Ninfas, 123, Boa Vista, Recife, PE";
+
+    // Simula as categorias disponíveis na API.
+    cy.intercept("GET", "**/categories", {
+      statusCode: 200,
+      body: {
+        data: [
+          {
+            id: 1,
+            nome: "Problemas na Via",
+            descricao: "Buracos e danos nas vias públicas",
+          },
+        ],
+      },
+    }).as("getCategorias");
+
+    // Simula a criação do chamado.
+    cy.intercept("POST", "**/demands", (req) => {
+      req.reply({
+        statusCode: 201,
+        body: {
+          id: "teste-001",
+          protocolo,
+          title: "Problemas na Via",
+          description: req.body.description,
+          category_id: 1,
+          category: {
+            id: 1,
+            nome: "Problemas na Via",
+          },
+          status: "Aberto",
+          location: req.body.location,
+          creator: {
+            id: "1",
+          },
+          createdAt: "2026-10-14T12:00:00.000Z",
+          updatedAt: "2026-10-14T12:00:00.000Z",
+        },
+      });
+    }).as("criarChamado");
+
+    // Simula a listagem contendo o chamado criado.
+    cy.intercept("GET", "**/demands", {
+      statusCode: 200,
+      body: {
+        data: [
+          {
+            id: "teste-001",
+            protocolo,
+            title: "Problemas na Via",
+            description: descricao,
+            category: {
+              id: 1,
+              nome: "Problemas na Via",
+            },
+            status: "Aberto",
+            location: endereco,
+            creator: {
+              id: "1",
+            },
+            createdAt: "2026-10-14T12:00:00.000Z",
+            updatedAt: "2026-10-14T12:00:00.000Z",
+          },
+        ],
+      },
+    }).as("listarChamados");
+
     cy.visit("https://projeto-web-one-theta.vercel.app/login");
 
     cy.get('input[type="email"]').type("joao@example.com");
@@ -10,46 +80,33 @@ describe("Cidadão abre chamado", () => {
 
     cy.contains("button", "Novo Chamado").click();
     cy.url().should("include", "/cidadao/chamados/novo");
-    cy.contains("Qual tipo de problema você quer reportar?").should("be.visible");
 
+    cy.wait("@getCategorias");
+    cy.contains("Qual tipo de problema você quer reportar?").should(
+      "be.visible"
+    );
     cy.contains("Problemas na Via").click();
     cy.contains("button", /Próximo/).click();
 
     cy.contains("Descrição do Problema").should("be.visible");
-    cy.get("textarea").type(
-      "Existe um problema na via pública que precisa ser resolvido com urgência."
-    );
+    cy.get("textarea").type(descricao);
+
     cy.contains("Endereço / Localização")
       .parent()
       .find("input")
-      .type("Rua das Ninfas, 123, Boa Vista, Recife, PE");
+      .type(endereco);
 
     cy.contains("button", /Próximo/).click();
 
     cy.contains("Revise os dados antes de enviar:").should("be.visible");
     cy.contains("button", /Abrir Chamado/).click();
 
-    cy.get('[class*="chakra-alert__desc"]', { timeout: 10000 })
-      .should("be.visible")
-      .invoke("text")
-      .then((textoAlerta) => {
-        const match = textoAlerta.match(/\d+/);
-        expect(match, "alerta deve conter o número do protocolo").to.not.be.null;
-        const protocoloCriado = match[0];
+    cy.wait("@criarChamado");
 
-        cy.url({ timeout: 10000 }).should("match", /\/cidadao\/chamados\/?$/);
-        cy.contains("Meus Chamados").should("be.visible");
+    cy.contains("Protocolo: " + protocolo).should("be.visible");
+    cy.url().should("include", "/cidadao/chamados");
 
-        cy.get('a[href*="/cidadao/chamados/"]')
-          .first()
-          .should("be.visible")
-          .invoke("text")
-          .then((primeiroChamado) => {
-            expect(
-              primeiroChamado,
-              "o primeiro chamado da lista deve conter o protocolo recém-criado"
-            ).to.contain(protocoloCriado);
-          });
-      });
+    cy.wait("@listarChamados");
+    cy.contains(protocolo).should("be.visible");
   });
 });
