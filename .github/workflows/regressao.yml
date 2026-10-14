@@ -1,0 +1,84 @@
+name: Regressao completa
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regressao-completa:
+    name: Regressao completa
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+
+      - name: Instalar dependencias da raiz
+        run: npm ci
+
+      - name: Instalar dependencias do frontend
+        run: npm ci --prefix frontend
+
+      # JEST - TESTES UNITARIOS
+      - name: Executar testes unitarios
+        run: npm test --prefix frontend -- --runInBand src/tests/unit
+
+      # JEST - TESTES DE API
+      - name: Executar testes de API
+        run: npm test --prefix frontend -- --runInBand src/tests/api
+
+      # JEST - TESTES DE ACEITACAO
+      - name: Executar testes de aceitacao
+        run: npm test --prefix frontend -- --runInBand src/tests/acceptance
+
+      # CYPRESS - TESTES E2E
+      - name: Executar testes E2E com Cypress
+        run: >
+          npx cypress run
+          --spec "cypress/e2e/login.cy.js,cypress/e2e/open_chamado.cy.js"
+
+      # MAESTRO WEB - CONFIGURACAO
+      - name: Configurar Java para o Maestro
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Maestro CLI
+        shell: bash
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      # MAESTRO WEB - TESTE DE INTERFACE
+      - name: Executar teste Web com Maestro
+        shell: bash
+        run: |
+          npm run dev --prefix frontend > /tmp/fiscalize-frontend.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+
+          READY=0
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3001/login >/dev/null; then
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$READY" != "1" ]; then
+            cat /tmp/fiscalize-frontend.log
+            echo "A aplicacao nao iniciou na porta 3001."
+            exit 1
+          fi
+
+          maestro --platform=web test --headless \
+            tests/e2e/maestro/flows/smoke_home_redirects_to_login.yaml
