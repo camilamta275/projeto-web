@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  regressao-completa:
-    name: Regressao completa
+  testes-jest:
+    name: Testes automatizados com Jest
     runs-on: ubuntu-latest
 
     steps:
@@ -20,9 +20,11 @@ jobs:
       - name: Instalar dependencias do frontend
         run: npm install --prefix frontend
 
-      - name: Executar testes automatizados existentes (Jest)
-        run: npm test --prefix frontend -- --runInBand
+      - name: Executar testes unitarios
+        run: npm test --prefix frontend -- --runInBand src/tests/unit
 
-      # Completar com a equipe: adicionar steps de testes unitarios e de API.
-      # A suite Jest existente e de aceitacao (ATDD), nao unitarios.
-      # Completar com a equipe: adicionar o step E2E com os fluxos Cypress smoke.
+      - name: Executar testes de API
+        run: npm test --prefix frontend -- --runInBand src/tests/api
+
+      - name: Executar testes de aceitacao
+        run: npm test --prefix frontend -- --runInBand src/tests/acceptance
